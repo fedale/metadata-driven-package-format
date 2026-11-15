@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\FieldTypes;
+namespace Fedale\PackageFormat\FieldTypes;
 
 /**
  * The object a field-reference setting points into.

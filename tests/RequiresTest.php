@@ -2,60 +2,60 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\Document;
-use Fedale\TemplateFormat\DocumentCodec;
-use Fedale\TemplateFormat\DocumentKind;
-use Fedale\TemplateFormat\FieldTypes\FieldTypeCatalog;
-use Fedale\TemplateFormat\Package;
-use Fedale\TemplateFormat\PackageChecker;
-use Fedale\TemplateFormat\PackageDirectory;
-use Fedale\TemplateFormat\SchemaValidator;
-use Fedale\TemplateFormat\SeedRecords;
+use Fedale\PackageFormat\Document;
+use Fedale\PackageFormat\DocumentCodec;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;
+use Fedale\PackageFormat\Package;
+use Fedale\PackageFormat\PackageChecker;
+use Fedale\PackageFormat\PackageDirectory;
+use Fedale\PackageFormat\SchemaValidator;
+use Fedale\PackageFormat\SeedRecords;
 use PHPUnit\Framework\TestCase;
 
 /**
- * A template requiring another (acme/people requires acme/places ^1.0): it references the
- * required template's objects, fields and seed records, and only references them.
+ * A package requiring another (acme/people requires acme/places ^1.0): it references the
+ * required package's objects, fields and seed records, and only references them.
  */
 final class RequiresTest extends TestCase
 {
-    public function testReferencesTheRequiredTemplate(): void
+    public function testReferencesTheRequiredPackage(): void
     {
         self::assertSame([], self::problems(self::people(), [self::places()]));
     }
 
-    public function testTheRequiredTemplateMustBeGiven(): void
+    public function testTheRequiredPackageMustBeGiven(): void
     {
         self::assertContains(
-            'template.yaml: spec.requires.acme/places: acme/places is required: it must be installed, or given to check against.',
+            'package.yaml: spec.requires.acme/places: acme/places is required: it must be installed, or given to check against.',
             self::problems(self::people()),
         );
     }
 
     public function testTheRequiredVersionMustFit(): void
     {
-        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v1', 'acme/places' => '^2.0']] + $spec);
+        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v2', 'acme/places' => '^2.0']] + $spec);
 
-        self::assertContains('template.yaml: spec.requires.acme/places: acme/places 1.2.0 does not fit ^2.0.', self::problems($people, [self::places()]));
+        self::assertContains('package.yaml: spec.requires.acme/places: acme/places 1.2.0 does not fit ^2.0.', self::problems($people, [self::places()]));
     }
 
     public function testTheConstraintMustBeValid(): void
     {
-        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v1', 'acme/places' => '>=1.0']] + $spec);
+        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v2', 'acme/places' => '>=1.0']] + $spec);
 
         self::assertContains(
-            'template.yaml: spec.requires.acme/places: ">=1.0" is not a version constraint: ^1.2, ~1.2 or an exact 1.2.3.',
+            'package.yaml: spec.requires.acme/places: ">=1.0" is not a version constraint: ^1.2, ~1.2 or an exact 1.2.3.',
             self::problems($people, [self::places()]),
         );
     }
 
-    public function testATemplateDoesNotRequireItself(): void
+    public function testAPackageDoesNotRequireItself(): void
     {
-        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v1', 'acme/people' => '^1.0']] + $spec);
+        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v2', 'acme/people' => '^1.0']] + $spec);
 
-        self::assertContains('template.yaml: spec.requires.acme/people: A template does not require itself.', self::problems($people));
+        self::assertContains('package.yaml: spec.requires.acme/people: A package does not require itself.', self::problems($people));
     }
 
     public function testItsIdsDifferFromTheRequiredOnes(): void
@@ -68,8 +68,8 @@ final class RequiresTest extends TestCase
         ], 'objects/area.yaml'));
 
         $problems = self::problems($people, [self::places()]);
-        self::assertContains('objects/area.yaml: id: Already the id of an item of acme/places, which this template requires.', $problems);
-        self::assertContains('objects/area.yaml: spec.fields.0.id: Already the id of a field of acme/places, which this template requires.', $problems);
+        self::assertContains('objects/area.yaml: id: Already the id of an item of acme/places, which this package requires.', $problems);
+        self::assertContains('objects/area.yaml: spec.fields.0.id: Already the id of a field of acme/places, which this package requires.', $problems);
     }
 
     public function testItOnlyReferencesTheRequiredObjects(): void
@@ -78,7 +78,7 @@ final class RequiresTest extends TestCase
             'object' => 'acme.region',
             'kind' => 'grid',
             'name' => 'main',
-            'template' => "columns: [name]\n",
+            'source' => "columns: [name]\n",
         ], 'views/region.grid.main.yaml')), new Document(DocumentKind::Seed, 'acme.seed.region_more', [
             'object' => 'acme.region',
             'key' => 'code',
@@ -86,8 +86,8 @@ final class RequiresTest extends TestCase
         ], 'seeds/region.yaml'));
 
         $problems = self::problems($people, [self::places()]);
-        self::assertContains('views/region.grid.main.yaml: spec.object: "acme.region" is an object of acme/places: a template adds views to its own objects only.', $problems);
-        self::assertContains('seeds/region.yaml: spec.object: "acme.region" is an object of acme/places: a template seeds its own objects only.', $problems);
+        self::assertContains('views/region.grid.main.yaml: spec.object: "acme.region" is an object of acme/places: a package adds views to its own objects only.', $problems);
+        self::assertContains('seeds/region.yaml: spec.object: "acme.region" is an object of acme/places: a package seeds its own objects only.', $problems);
     }
 
     public function testASeedPointsAtRecordsOfTheRequiredSeed(): void
@@ -102,10 +102,10 @@ final class RequiresTest extends TestCase
 
     public function testWithoutTheRequirementItsObjectsAreUnknown(): void
     {
-        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v1']] + $spec);
+        $people = self::withManifest(self::people(), static fn (array $spec): array => ['requires' => ['format' => 'metadata-driven/v2']] + $spec);
 
         self::assertContains(
-            'objects/person.yaml: spec.fields.1.settings.target: No object of the template has the id "acme.region".',
+            'objects/person.yaml: spec.fields.1.settings.target: No object of the package has the id "acme.region".',
             self::problems($people, [self::places()]),
         );
     }

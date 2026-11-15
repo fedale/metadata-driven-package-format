@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Versions;
+namespace Fedale\PackageFormat\Versions;
 
-use Fedale\TemplateFormat\DocumentKind;
-use Fedale\TemplateFormat\Package;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\Package;
 
 /**
  * The ids of a package's objects, fields and forms by their names: a translation key names

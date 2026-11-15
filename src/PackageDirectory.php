@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * A package as a directory: the manifest at its root, every other document in a file the
@@ -23,26 +23,27 @@ final class PackageDirectory
     public function read(string $directory): Package
     {
         $directory = rtrim($directory, '/');
-        $manifestPath = $directory.'/'.Format::MANIFEST;
+        // A package of format v1 has its manifest in template.yaml.
+        $name = is_file($directory.'/'.Format::MANIFEST) || !is_file($directory.'/'.Format::MANIFEST_V1) ? Format::MANIFEST : Format::MANIFEST_V1;
+        $manifestPath = $directory.'/'.$name;
         if (!is_file($manifestPath)) {
             throw new InvalidPackage([new Problem(Format::MANIFEST, '', \sprintf('No manifest in "%s".', $directory))]);
         }
         // Nothing is read through a link: what it points at could be anywhere, and a problem
         // quoting it would show it to whoever reads the report.
         if (!self::inside($directory, $manifestPath)) {
-            throw new InvalidPackage([new Problem(Format::MANIFEST, '', 'Not a regular file.')]);
+            throw new InvalidPackage([new Problem($name, '', 'Not a regular file.')]);
         }
-        $manifest = $this->codec->decode((string) file_get_contents($manifestPath), Format::MANIFEST);
-        if (DocumentKind::Template !== $manifest->kind) {
-            throw new InvalidPackage([new Problem(Format::MANIFEST, 'kind', 'The manifest is of kind Template.')]);
+        $manifest = $this->codec->decode((string) file_get_contents($manifestPath), $name);
+        if (DocumentKind::Package !== $manifest->kind) {
+            throw new InvalidPackage([new Problem($name, 'kind', 'The manifest is of kind Package.')]);
         }
-
         $problems = [];
         $documents = [];
         foreach ($this->resources($manifest) as $i => $pattern) {
             // The schema allows "dir/pattern.yaml" only: no "..", no absolute path, no subdirectories.
             if (str_contains($pattern, '..') || str_starts_with($pattern, '/')) {
-                $problems[] = new Problem(Format::MANIFEST, 'spec.resources.'.$i, 'A resource stays inside the package.');
+                $problems[] = new Problem($name, 'spec.resources.'.$i, 'A resource stays inside the package.');
                 continue;
             }
             foreach (glob($directory.'/'.$pattern) ?: [] as $file) {
@@ -89,7 +90,7 @@ final class PackageDirectory
     {
         $directory = rtrim($directory, '/');
         if (is_dir($directory) && [] !== array_diff((array) scandir($directory), ['.', '..'])) {
-            throw new \RuntimeException(\sprintf('The directory "%s" is not empty: a template is written into a new or empty one.', $directory));
+            throw new \RuntimeException(\sprintf('The directory "%s" is not empty: a package is written into a new or empty one.', $directory));
         }
         foreach ([$package->manifest, ...$package->documents] as $document) {
             $file = $directory.'/'.$document->path;
@@ -103,7 +104,7 @@ final class PackageDirectory
         foreach ($package->files as $path => $data) {
             // Paths come from the package: none may leave the directory.
             if ('' === $path || str_starts_with($path, '/') || \in_array('..', explode('/', $path), true)) {
-                throw new \RuntimeException(\sprintf('The file "%s" would be written outside the template.', $path));
+                throw new \RuntimeException(\sprintf('The file "%s" would be written outside the package.', $path));
             }
             $file = $directory.'/'.$path;
             if (!is_dir(\dirname($file)) && !mkdir(\dirname($file), 0o775, true) && !is_dir(\dirname($file))) {

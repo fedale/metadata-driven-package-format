@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests\Support;
+namespace Fedale\PackageFormat\Tests\Support;
 
 /**
  * Removes a temporary directory a test wrote into, with everything in it.

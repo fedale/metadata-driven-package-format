@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\Archive;
-use Fedale\TemplateFormat\InvalidPackage;
-use Fedale\TemplateFormat\Tests\Support\RemovesDirectories;
+use Fedale\PackageFormat\Archive;
+use Fedale\PackageFormat\InvalidPackage;
+use Fedale\PackageFormat\Tests\Support\RemovesDirectories;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -27,7 +27,7 @@ final class ArchiveTest extends TestCase
         self::removeDirectory($this->directory);
     }
 
-    public function testPacksATemplateAndUnpacksItTheSame(): void
+    public function testPacksAPackageAndUnpacksItTheSame(): void
     {
         $archive = $this->directory.'/shop.tar.gz';
         (new Archive())->pack(PackageCheckerTest::FIXTURE, $archive);
@@ -50,7 +50,7 @@ final class ArchiveTest extends TestCase
     public function testTheSamePackageGivesTheSameArchive(): void
     {
         (new Archive())->pack(PackageCheckerTest::FIXTURE, $this->directory.'/a.tar.gz');
-        touch(PackageCheckerTest::FIXTURE.'/template.yaml');
+        touch(PackageCheckerTest::FIXTURE.'/package.yaml');
         (new Archive())->pack(PackageCheckerTest::FIXTURE, $this->directory.'/b.tar.gz');
 
         self::assertSame(hash_file('sha256', $this->directory.'/a.tar.gz'), hash_file('sha256', $this->directory.'/b.tar.gz'));
@@ -76,12 +76,12 @@ final class ArchiveTest extends TestCase
     public static function maliciousArchives(): iterable
     {
         $end = str_repeat("\0", 1024);
-        yield 'a path leaving the target' => [self::entry('../escaped', 'x').$end, 'would leave the template'];
-        yield 'an absolute path' => [self::entry('/tmp/escaped', 'x').$end, 'would leave the template'];
+        yield 'a path leaving the target' => [self::entry('../escaped', 'x').$end, 'would leave the package'];
+        yield 'an absolute path' => [self::entry('/tmp/escaped', 'x').$end, 'would leave the package'];
         yield 'a symbolic link' => [self::entry('objects/link', '', '2').$end, 'something other than files and directories'];
         yield 'too large once uncompressed' => [self::entry('big.csv', str_repeat('a', 1_000_001)).$end, 'more than 1 MB'];
-        yield 'a corrupt header' => [substr_replace(self::entry('template.yaml', 'x'), 'X', 10, 1).$end, 'A header is corrupt'];
-        yield 'cut short' => [substr(self::entry('template.yaml', str_repeat('a', 2000)), 0, 1024), 'It ends too soon'];
+        yield 'a corrupt header' => [substr_replace(self::entry('package.yaml', 'x'), 'X', 10, 1).$end, 'A header is corrupt'];
+        yield 'cut short' => [substr(self::entry('package.yaml', str_repeat('a', 2000)), 0, 1024), 'It ends too soon'];
     }
 
     /**

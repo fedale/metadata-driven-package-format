@@ -1,8 +1,8 @@
 {
-    "name": "fedale/metadata-driven-template-format",
+    "name": "fedale/metadata-driven-package-format",
     "type": "library",
-    "description": "The metadata-driven template format: schemas, package reader, structural checks, archives, signed indexes",
-    "keywords": ["metadata-driven", "templates", "json-schema", "ed25519"],
+    "description": "The metadata-driven package format: schemas, package reader, structural checks, archives, signed indexes",
+    "keywords": ["metadata-driven", "packages", "json-schema", "ed25519"],
     "license": "MIT",
     "require": {
         "php": ">=8.4",
@@ -18,12 +18,12 @@
     },
     "autoload": {
         "psr-4": {
-            "Fedale\\TemplateFormat\\": "src/"
+            "Fedale\\PackageFormat\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Fedale\\TemplateFormat\\Tests\\": "tests/"
+            "Fedale\\PackageFormat\\Tests\\": "tests/"
         }
     },
     "config": {
@@ -31,7 +31,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "1.2.x-dev"
+            "dev-main": "2.0.x-dev"
         }
     },
     "scripts": {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\FieldTypes;
+namespace Fedale\PackageFormat\FieldTypes;
 
 /**
- * A setting holding the id of another item of the template: an object, or a field of some
+ * A setting holding the id of another item of the package: an object, or a field of some
  * object (the field's own, its target's, or its junction object's).
  */
 final readonly class SettingReference

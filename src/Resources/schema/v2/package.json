@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:metadata-driven:schema:v1:template",
-    "title": "The spec of a Template document: the manifest of a package",
+    "$id": "urn:metadata-driven:schema:v2:package",
+    "title": "The spec of a Package document: the manifest of a package",
     "type": "object",
     "additionalProperties": false,
     "required": ["version", "label", "license", "requires", "resources"],
@@ -13,7 +13,7 @@
         "requires": {
             "type": "object",
             "required": ["format"],
-            "properties": { "format": { "const": "metadata-driven/v1" } },
+            "properties": { "format": { "const": "metadata-driven/v2" } },
             "propertyNames": { "pattern": "^(format|[a-z][a-z0-9-]*/[a-z][a-z0-9-]*)$" },
             "additionalProperties": { "type": "string", "minLength": 1 }
         },

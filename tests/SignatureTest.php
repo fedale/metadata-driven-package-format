@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\IndexEntry;
-use Fedale\TemplateFormat\Signature;
+use Fedale\PackageFormat\IndexEntry;
+use Fedale\PackageFormat\Signature;
 use PHPUnit\Framework\TestCase;
 
 final class SignatureTest extends TestCase
@@ -27,7 +27,7 @@ final class SignatureTest extends TestCase
 
         // The yanked flag flipped, another archive, another version, another key, no signature:
         // none verifies.
-        self::assertFalse(Signature::verify(new IndexEntry('acme/shop', '1.0.0', 'https://templates.acme.example/acme-shop.tar.gz', str_repeat('a', 64), $signature, yanked: true), $keys['public']));
+        self::assertFalse(Signature::verify(new IndexEntry('acme/shop', '1.0.0', 'https://packages.acme.example/acme-shop.tar.gz', str_repeat('a', 64), $signature, yanked: true), $keys['public']));
         self::assertFalse(Signature::verify(self::entry(sha256: str_repeat('b', 64), signature: $signature), $keys['public']));
         self::assertFalse(Signature::verify(self::entry(version: '2.0.0', signature: $signature), $keys['public']));
         self::assertFalse(Signature::verify(self::entry(signature: $signature), Signature::keyPair()['public']));
@@ -37,6 +37,6 @@ final class SignatureTest extends TestCase
 
     private static function entry(string $version = '1.0.0', string $sha256 = '', ?string $signature = null): IndexEntry
     {
-        return new IndexEntry('acme/shop', $version, 'https://templates.acme.example/acme-shop.tar.gz', '' === $sha256 ? str_repeat('a', 64) : $sha256, $signature);
+        return new IndexEntry('acme/shop', $version, 'https://packages.acme.example/acme-shop.tar.gz', '' === $sha256 ? str_repeat('a', 64) : $sha256, $signature);
     }
 }

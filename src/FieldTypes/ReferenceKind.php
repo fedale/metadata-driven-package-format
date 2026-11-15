@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\FieldTypes;
+namespace Fedale\PackageFormat\FieldTypes;
 
 enum ReferenceKind: string
 {

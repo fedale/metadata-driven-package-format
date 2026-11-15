@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * The ids and names of a package's documents, for resolving references; built from documents
  * that passed their schema. Duplicates are reported as problems.
  *
- * With the indexes of the templates the package requires (withRequired()), objects and fields
- * resolve in those too: a requiring template references their items. hasOwnObject() and
+ * With the indexes of the packages the package requires (withRequired()), objects and fields
+ * resolve in those too: a requiring package references their items. hasOwnObject() and
  * isOwnField() tell its own items apart.
  *
  * @internal used by PackageChecker
@@ -28,7 +28,7 @@ final class PackageIndex
     /** @var array<string, array<string, array<mixed>>> object id => field name => field */
     private array $fields = [];
 
-    /** @var array<string, self> the indexes of the required templates, by template name */
+    /** @var array<string, self> the indexes of the required packages, by package name */
     private array $required = [];
 
     /** @var list<string> the form ids */
@@ -71,7 +71,7 @@ final class PackageIndex
     }
 
     /**
-     * @param array<string, self> $required the indexes of the required templates, by name
+     * @param array<string, self> $required the indexes of the required packages, by name
      */
     public function withRequired(array $required): void
     {
@@ -79,11 +79,11 @@ final class PackageIndex
     }
 
     /**
-     * Whether the id names an object of the package or of a template it requires.
+     * Whether the id names an object of the package or of a package it requires.
      */
     public function hasObject(string $id): bool
     {
-        return $this->hasOwnObject($id) || null !== $this->requiredTemplateOf($id);
+        return $this->hasOwnObject($id) || null !== $this->requiredPackageOf($id);
     }
 
     public function hasOwnObject(string $id): bool
@@ -92,9 +92,9 @@ final class PackageIndex
     }
 
     /**
-     * The required template defining the object; null for an object of the package, or none.
+     * The required package defining the object; null for an object of the package, or none.
      */
-    public function requiredTemplateOf(string $objectId): ?string
+    public function requiredPackageOf(string $objectId): ?string
     {
         foreach ($this->required as $name => $index) {
             if ($index->hasOwnObject($objectId)) {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
- * An index: the templates a repository offers, each version with the address of its archive,
+ * An index: the packages a repository offers, each version with the address of its archive,
  * its checksum and, signed, its signature. A static JSON file, in the manner of Helm
  * repositories: any web server can host one.
  *
@@ -13,14 +13,16 @@ namespace Fedale\TemplateFormat;
  *       "format": "metadata-driven/index/v1",
  *       "templates": {
  *         "acme/shop": {
- *           "1.0.0": { "url": "acme-shop-1.0.0.tar.gz", "sha256": "…", "requires": { "format": "metadata-driven/v1" } }
+ *           "1.0.0": { "url": "acme-shop-1.0.0.tar.gz", "sha256": "…", "requires": { "format": "metadata-driven/v2" } }
  *         }
  *       }
  *     }
  *
- * A relative "url" is resolved against the index's own address.
+ * A relative "url" is resolved against the index's own address. The index format is still v1:
+ * its "templates" key keeps the name packages had then. Each version says the package format it
+ * is written in; the versions of a format this library does not read are left out (usable()).
  */
-final class TemplateIndex
+final class RepositoryIndex
 {
     public const string FORMAT = 'metadata-driven/index/v1';
 
@@ -55,7 +57,7 @@ final class TemplateIndex
         foreach ($data['templates'] as $name => $versions) {
             $name = (string) $name;
             if (1 !== preg_match(Format::NAME_PATTERN, $name) || !\is_array($versions)) {
-                throw new InvalidIndex(\sprintf('The index at %s lists "%s", which is no template name.', $address, $name));
+                throw new InvalidIndex(\sprintf('The index at %s lists "%s", which is no package name.', $address, $name));
             }
             foreach ($versions as $version => $entry) {
                 $version = (string) $version;
@@ -64,7 +66,8 @@ final class TemplateIndex
                     throw new InvalidIndex(\sprintf('The index at %s has an invalid entry for %s %s: it needs a url and a sha256.', $address, $name, $version));
                 }
                 $requires = [];
-                foreach (\is_array($entry['requires'] ?? null) ? $entry['requires'] : ['format' => Format::VERSION] as $required => $constraint) {
+                // An entry that names no format comes from before format v2.
+                foreach (\is_array($entry['requires'] ?? null) ? $entry['requires'] : ['format' => Format::READS[0]] as $required => $constraint) {
                     $requires[(string) $required] = \is_scalar($constraint) ? (string) $constraint : '';
                 }
                 $entries[$name][$version] = new IndexEntry(
@@ -109,7 +112,7 @@ final class TemplateIndex
      */
     public function latest(string $name): ?IndexEntry
     {
-        $usable = array_filter($this->versions($name), static fn (IndexEntry $entry): bool => !$entry->yanked && Format::VERSION === ($entry->requires['format'] ?? null));
+        $usable = array_filter($this->versions($name), static fn (IndexEntry $entry): bool => !$entry->yanked && \in_array($entry->requires['format'] ?? null, Format::READS, true));
 
         return [] === $usable ? null : end($usable);
     }
@@ -135,11 +138,11 @@ final class TemplateIndex
      */
     public function toJson(string $address = ''): string
     {
-        $templates = [];
+        $packages = [];
         foreach ($this->names() as $name) {
             foreach ($this->versions($name) as $entry) {
                 $url = '' !== $address && str_starts_with($entry->url, self::base($address)) ? substr($entry->url, \strlen(self::base($address))) : $entry->url;
-                $templates[$name][$entry->version] = array_filter([
+                $packages[$name][$entry->version] = array_filter([
                     'url' => $url,
                     'sha256' => $entry->sha256,
                     'signature' => $entry->signature,
@@ -149,7 +152,7 @@ final class TemplateIndex
             }
         }
 
-        return json_encode(['format' => self::FORMAT, 'templates' => $templates], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR)."\n";
+        return json_encode(['format' => self::FORMAT, 'templates' => $packages], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR)."\n";
     }
 
     private static function resolve(string $url, string $address): string

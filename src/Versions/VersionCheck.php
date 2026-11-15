@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Versions;
+namespace Fedale\PackageFormat\Versions;
+
+use Fedale\PackageFormat\Format;
 
 /**
  * Whether a new version's number fits what it changed against an earlier version: metadata-driven
@@ -14,7 +16,7 @@ namespace Fedale\TemplateFormat\Versions;
  *   removes and renames nothing, and carries no migration steps;
  * - a patch only changes labels, layouts, forms and translations.
  *
- * A template whose number lies about its changes is refused: who installs a minor version
+ * A package whose number lies about its changes is refused: who installs a minor version
  * expects to lose nothing.
  */
 final class VersionCheck
@@ -37,7 +39,7 @@ final class VersionCheck
             $problems[] = \sprintf('%s: %s %s: %s needs a new %s version, %s is not one.', $state->document->path, $state->kind, $state->id, $what, $version, $to);
         };
         if ($migrates) {
-            $problems[] = \sprintf('template.yaml: spec.migrations: migration steps need a new major version, %s is not one.', $to);
+            $problems[] = \sprintf('%s: spec.migrations: migration steps need a new major version, %s is not one.', Format::MANIFEST, $to);
         }
         foreach ($base as $key => $state) {
             if (!isset($theirs[$key]) && 'translation' !== $state->kind) {

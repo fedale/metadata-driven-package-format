@@ -1,10 +1,14 @@
-# fedale/metadata-driven-template-format
+# fedale/metadata-driven-package-format
 
-The template format of [metadata-driven](../metadata-driven): what a template package looks
-like, and the tools to read, check, pack and list one. metadata-driven installs and upgrades
-templates with it; the template catalog checks them with it on publish.
+The package format of [metadata-driven](../metadata-driven): what a package looks like, and the
+tools to read, check, pack and list one. metadata-driven installs and upgrades packages with it;
+the package catalog checks them with it on publish.
 
-It is data only: a template holds objects, forms, views, translations and seeds, never code.
+It is data only: a package holds objects, forms, views, translations and seeds, never code.
+
+Until 1.2 this library was `fedale/metadata-driven-template-format`, namespace
+`Fedale\TemplateFormat`, and packages were called templates. 2.0 is the same library under its new
+name: see [Format v2](#format-v2).
 
 ## What it gives you
 
@@ -14,43 +18,43 @@ It is data only: a template holds objects, forms, views, translations and seeds,
 | `Archive` | Packs a package as a reproducible `.tar.gz`, and unpacks one safely (no absolute paths, no `..`, no links, size limits) |
 | `PackageChecker` | The structural checks: every document against its JSON schema, unique ids, references, seeds, files. Returns a list of `Problem` |
 | `DocumentCodec` | A document's YAML envelope (`format`, `kind`, `id`, `spec`) |
-| `TemplateIndex`, `IndexEntry` | The index of a template repository (`metadata-driven/index/v1`): versions, archive URLs, checksums, signatures, yanked versions |
+| `RepositoryIndex`, `IndexEntry` | The index of a package repository (`metadata-driven/index/v1`): versions, archive URLs, checksums, signatures, yanked versions |
 | `Signature` | Ed25519 signatures of index entries (libsodium) |
 | `SeedRecords` | The records of a seed, inline or from a CSV file |
 | `FieldTypes\FieldTypeCatalog` | The field types of format v1 and their settings, so settings are checked without metadata-driven |
 | `Constraint` | A version constraint of `spec.requires`: `^1.2`, `~1.2` or an exact `1.2.3` |
 | `Versions\ItemStates`, `Versions\VersionCheck` | A package's items (each object, field, view, form, translation) in a form that compares equal when they mean the same, and whether a version's number fits what it changed against an earlier version: a patch changes labels, layouts, forms and translations; a minor adds and changes settings; removals, renames and migration steps need a major |
 
-The schemas live in `src/Resources/schema/v1/`, the field types in
+The schemas live in `src/Resources/schema/v2/`, the field types in
 `src/Resources/field-types.v1.json`.
 
 ```php
-use Fedale\TemplateFormat\DocumentCodec;
-use Fedale\TemplateFormat\FieldTypes\FieldTypeCatalog;
-use Fedale\TemplateFormat\PackageChecker;
-use Fedale\TemplateFormat\PackageDirectory;
-use Fedale\TemplateFormat\SchemaValidator;
-use Fedale\TemplateFormat\SeedRecords;
+use Fedale\PackageFormat\DocumentCodec;
+use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;
+use Fedale\PackageFormat\PackageChecker;
+use Fedale\PackageFormat\PackageDirectory;
+use Fedale\PackageFormat\SchemaValidator;
+use Fedale\PackageFormat\SeedRecords;
 
-$package = (new PackageDirectory(new DocumentCodec()))->read('/srv/templates/shop');
+$package = (new PackageDirectory(new DocumentCodec()))->read('/srv/packages/shop');
 $problems = (new PackageChecker(new SchemaValidator(), new FieldTypeCatalog(), new SeedRecords()))->check($package);
 ```
 
-### Templates requiring templates
+### Packages requiring packages
 
-A template may require others, with a constraint each:
+A package may require others, with a constraint each:
 
 ```yaml
 spec:
   requires:
-    format: metadata-driven/v1
+    format: metadata-driven/v2
     acme/places: ^1.0
 ```
 
-It then references their objects and fields by id, as its own (a relation's `target`, a composite
-form's `object` and `via`, a seed's references by the key of the required seed), and only
-references them: its ids differ from theirs, its views and seeds are of its own objects. Check it
-with the required templates, as installed or published:
+It then references their objects and fields by id, as its own (a relation's `target`, a form's
+`object` and `via`, a seed's references by the key of the required seed), and only references
+them: its ids differ from theirs, its views and seeds are of its own objects. Check it with the
+required packages, as installed or published:
 
 ```php
 $problems = $checker->check($people, [$places]);   // acme/places in a version ^1.0 allows
@@ -61,8 +65,8 @@ A requirement not given is a problem: the references to it cannot be checked.
 Checking a new version's number against the previous one:
 
 ```php
-use Fedale\TemplateFormat\Versions\ItemStates;
-use Fedale\TemplateFormat\Versions\VersionCheck;
+use Fedale\PackageFormat\Versions\ItemStates;
+use Fedale\PackageFormat\Versions\VersionCheck;
 
 $states = new ItemStates(new FieldTypeCatalog());
 $problems = VersionCheck::problems($states->of($previous), $states->of($next), '1.2.0', '1.3.0', migrates: false);
@@ -73,6 +77,35 @@ Seed records are not compared: a version that only changes records fits any numb
 
 What only metadata-driven can tell (a form that does not fit its objects, a value that does not
 fit its field) is checked there, at install.
+
+## Format v2
+
+Format v2 (`format: metadata-driven/v2`) renames what said "template" in v1:
+
+| v1 | v2 |
+|---|---|
+| the manifest `template.yaml`, of kind `Template` | `package.yaml`, of kind `Package` |
+| a view's `template` (its HTML layout or its grid YAML) | its `source` |
+| `requires: { format: metadata-driven/v1 }` | `requires: { format: metadata-driven/v2 }` |
+
+Everything else is the same. **v1 is still read**: `PackageDirectory` takes `template.yaml` when
+there is no `package.yaml`, and `DocumentCodec` reads a v1 document as its v2 equivalent, so
+nothing past the reader sees v1. Everything is written in v2.
+
+The index keeps its format, `metadata-driven/index/v1`, and its `templates` key. Each version
+says the format it is written in (`requires.format`; none means v1): `RepositoryIndex::latest()`
+picks among the versions of a format this library reads, v1 or v2.
+
+### Upgrading from fedale/metadata-driven-template-format 1.x
+
+- Require `fedale/metadata-driven-package-format` `^2.0` instead, and replace the namespace
+  `Fedale\TemplateFormat` with `Fedale\PackageFormat`.
+- `TemplateIndex` is `RepositoryIndex`; `DocumentKind::Template` is `DocumentKind::Package`.
+- `Format::VERSION` is `metadata-driven/v2` and `Format::MANIFEST` is `package.yaml`;
+  `Format::READS` lists the versions read, `Format::MANIFEST_V1` the manifest of v1.
+- A view's spec has `source`, not `template`; a manifest requires `format: metadata-driven/v2`.
+  Anything that stored v1 documents (an installation's snapshot) reads them through
+  `DocumentCodec`, or converts them once.
 
 ## Requirements
 

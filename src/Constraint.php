@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * A version constraint of `spec.requires`, Composer's subset: `^1.2` (>=1.2.0, <2.0.0; for

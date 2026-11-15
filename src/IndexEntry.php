@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
- * One version of one template, as an index lists it.
+ * One version of one package, as an index lists it.
  */
 final readonly class IndexEntry
 {
     /**
-     * @param array<string, string> $requires what the template requires: the format, other templates
+     * @param array<string, string> $requires what the package requires: the format, other packages
      */
     public function __construct(
         public string $name,
