@@ -92,20 +92,9 @@ Everything else is the same. **v1 is still read**: `PackageDirectory` takes `tem
 there is no `package.yaml`, and `DocumentCodec` reads a v1 document as its v2 equivalent, so
 nothing past the reader sees v1. Everything is written in v2.
 
-The index keeps its format, `metadata-driven/index/v1`, and its `templates` key. Each version
-says the format it is written in (`requires.format`; none means v1): `RepositoryIndex::latest()`
+The index (`metadata-driven/index/v1`) lists the packages under `packages`. Each version says the
+package format it is written in (`requires.format`; none means v1): `RepositoryIndex::latest()`
 picks among the versions of a format this library reads, v1 or v2.
-
-### Upgrading from fedale/metadata-driven-template-format 1.x
-
-- Require `fedale/metadata-driven-package-format` `^2.0` instead, and replace the namespace
-  `Fedale\TemplateFormat` with `Fedale\PackageFormat`.
-- `TemplateIndex` is `RepositoryIndex`; `DocumentKind::Template` is `DocumentKind::Package`.
-- `Format::VERSION` is `metadata-driven/v2` and `Format::MANIFEST` is `package.yaml`;
-  `Format::READS` lists the versions read, `Format::MANIFEST_V1` the manifest of v1.
-- A view's spec has `source`, not `template`; a manifest requires `format: metadata-driven/v2`.
-  Anything that stored v1 documents (an installation's snapshot) reads them through
-  `DocumentCodec`, or converts them once.
 
 ## Requirements
 
