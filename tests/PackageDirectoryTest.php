@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\Document;
-use Fedale\TemplateFormat\DocumentCodec;
-use Fedale\TemplateFormat\InvalidPackage;
-use Fedale\TemplateFormat\Package;
-use Fedale\TemplateFormat\PackageDirectory;
-use Fedale\TemplateFormat\Tests\Support\RemovesDirectories;
+use Fedale\PackageFormat\Document;
+use Fedale\PackageFormat\DocumentCodec;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\InvalidPackage;
+use Fedale\PackageFormat\Package;
+use Fedale\PackageFormat\PackageDirectory;
+use Fedale\PackageFormat\Tests\Support\RemovesDirectories;
 use PHPUnit\Framework\TestCase;
 
 final class PackageDirectoryTest extends TestCase
@@ -20,7 +21,7 @@ final class PackageDirectoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->directory = sys_get_temp_dir().'/md-template-'.bin2hex(random_bytes(4));
+        $this->directory = sys_get_temp_dir().'/md-package-'.bin2hex(random_bytes(4));
     }
 
     protected function tearDown(): void
@@ -47,6 +48,17 @@ final class PackageDirectoryTest extends TestCase
             'views/product.form.main.yaml',
             'views/product.grid.main.yaml',
         ], array_map(static fn (Document $document): string => $document->path, $package->documents));
+    }
+
+    public function testReadsAPackageOfFormatV1(): void
+    {
+        $package = (new PackageDirectory(new DocumentCodec()))->read(__DIR__.'/Fixtures/places');
+
+        self::assertSame('template.yaml', $package->manifest->path);
+        self::assertSame(DocumentKind::Package, $package->manifest->kind);
+        $requires = $package->manifest->spec['requires'] ?? null;
+        self::assertIsArray($requires);
+        self::assertSame('metadata-driven/v2', $requires['format'] ?? null);
     }
 
     public function testWritesAPackageThatReadsBackTheSame(): void
@@ -82,7 +94,7 @@ final class PackageDirectoryTest extends TestCase
             $directories->read($this->directory);
             self::fail('A resource outside the package must be refused.');
         } catch (InvalidPackage $e) {
-            self::assertSame(['template.yaml: spec.resources.0: A resource stays inside the package.'], array_map(strval(...), $e->problems));
+            self::assertSame(['package.yaml: spec.resources.0: A resource stays inside the package.'], array_map(strval(...), $e->problems));
         }
     }
 
@@ -114,13 +126,13 @@ final class PackageDirectoryTest extends TestCase
     {
         mkdir($this->directory);
         file_put_contents($this->directory.'/secret.yaml', 'runner secret: [');
-        symlink($this->directory.'/secret.yaml', $this->directory.'/template.yaml');
+        symlink($this->directory.'/secret.yaml', $this->directory.'/package.yaml');
 
         try {
             (new PackageDirectory(new DocumentCodec()))->read($this->directory);
             self::fail('A linked manifest must be refused.');
         } catch (InvalidPackage $e) {
-            self::assertSame(['template.yaml: Not a regular file.'], array_map(strval(...), $e->problems));
+            self::assertSame(['package.yaml: Not a regular file.'], array_map(strval(...), $e->problems));
         }
     }
 

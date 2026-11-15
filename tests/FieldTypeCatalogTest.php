@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\FieldTypes\FieldOwner;
-use Fedale\TemplateFormat\FieldTypes\FieldTypeCatalog;
-use Fedale\TemplateFormat\FieldTypes\ReferenceKind;
-use Fedale\TemplateFormat\FieldTypes\SettingReference;
+use Fedale\PackageFormat\FieldTypes\FieldOwner;
+use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;
+use Fedale\PackageFormat\FieldTypes\ReferenceKind;
+use Fedale\PackageFormat\FieldTypes\SettingReference;
 use PHPUnit\Framework\TestCase;
 
 /**

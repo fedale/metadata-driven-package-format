@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * A package as a .tar.gz archive, the form it is downloaded in.
@@ -34,7 +34,7 @@ final class Archive
                 continue;
             }
             if ($entry->isLink() || !$entry->isFile()) {
-                throw new \RuntimeException(\sprintf('"%s" is not a regular file: a template holds files only.', $entry->getPathname()));
+                throw new \RuntimeException(\sprintf('"%s" is not a regular file: a package holds files only.', $entry->getPathname()));
             }
             $files[] = substr($entry->getPathname(), \strlen($directory) + 1);
         }
@@ -172,7 +172,7 @@ final class Archive
         $path = rtrim($path, '/');
         if ('' === $path || str_starts_with(('' === $prefix ? '' : $prefix.'/').$name, '/') || str_contains($path, '\\') || str_contains($path, "\0")
             || \in_array('..', explode('/', $path), true)) {
-            throw self::invalid(\sprintf('The path "%s" would leave the template.', $path));
+            throw self::invalid(\sprintf('The path "%s" would leave the package.', $path));
         }
         $size = octdec(trim(substr($header, 124, 12), " \0"));
 

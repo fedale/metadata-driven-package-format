@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:metadata-driven:schema:v1:seed",
+    "$id": "urn:metadata-driven:schema:v2:seed",
     "title": "The spec of a Seed document: records of one object, written when the template is installed",
     "type": "object",
     "additionalProperties": false,

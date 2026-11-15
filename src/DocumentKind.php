@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 enum DocumentKind: string
 {
-    /** The manifest: the template's name, version and what it requires. */
-    case Template = 'Template';
+    /** The manifest: the package's name, version and what it requires. */
+    case Package = 'Package';
     /** An object and its fields. */
     case Object = 'Object';
     /** A composite form. */
@@ -25,7 +25,7 @@ enum DocumentKind: string
     public function directory(): string
     {
         return match ($this) {
-            self::Template => '',
+            self::Package => '',
             self::Object => 'objects',
             self::Form => 'forms',
             self::View => 'views',

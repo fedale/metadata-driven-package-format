@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Versions;
+namespace Fedale\PackageFormat\Versions;
 
-use Fedale\TemplateFormat\Document;
-use Fedale\TemplateFormat\DocumentKind;
-use Fedale\TemplateFormat\FieldTypes\FieldTypeCatalog;
-use Fedale\TemplateFormat\Package;
+use Fedale\PackageFormat\Document;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;
+use Fedale\PackageFormat\Package;
 
 /**
- * A template's items, one by one, in a form that compares equal when they mean the same: the
+ * A package's items, one by one, in a form that compares equal when they mean the same: the
  * installed version, the new one and what the instance holds now all go through it, and an
  * upgrade compares them item by item.
  *
  * The items: an object's own properties ("object:<id>"), each field ("field:<id>"), each view,
  * each form, and each translation ("translation:<locale>:<key>", its key naming objects, fields
  * and forms by id, so that a rename does not make it another item). Defaults are filled in and
- * lists that are sets are sorted: a template that leaves a default out equals one that writes it.
+ * lists that are sets are sorted: a package that leaves a default out equals one that writes it.
  */
 final class ItemStates
 {
@@ -105,7 +105,7 @@ final class ItemStates
             'kind' => $spec['kind'] ?? null,
             'name' => $spec['name'] ?? null,
             'default' => true === ($spec['default'] ?? false),
-            'template' => \is_string($spec['template'] ?? null) ? rtrim($spec['template']) : null,
+            'source' => \is_string($spec['source'] ?? null) ? rtrim($spec['source']) : null,
         ];
     }
 

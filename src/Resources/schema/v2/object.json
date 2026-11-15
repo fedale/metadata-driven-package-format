@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "urn:metadata-driven:schema:v1:object",
+    "$id": "urn:metadata-driven:schema:v2:object",
     "title": "The spec of an Object document: an object and its fields",
     "type": "object",
     "additionalProperties": false,

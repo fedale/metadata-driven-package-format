@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\FieldTypes;
+namespace Fedale\PackageFormat\FieldTypes;
 
-use Fedale\TemplateFormat\Format;
+use Fedale\PackageFormat\Format;
 
 /**
  * The field types the format knows, and the settings of each, from field-types.v1.json.
  *
- * The format checks a template's settings with it, without metadata-driven: the catalog can refuse a
- * broken template on publish. In a template, settings are partial (what is left out takes its
- * default), and a setting naming an object or a field holds the id of an item of the template.
+ * The format checks a package's settings with it, without metadata-driven: the catalog can refuse a
+ * broken package on publish. In a package, settings are partial (what is left out takes its
+ * default), and a setting naming an object or a field holds the id of an item of the package.
  */
 final class FieldTypeCatalog
 {
@@ -84,7 +84,7 @@ final class FieldTypeCatalog
 
     /**
      * The problems of a field's settings, by setting key ("" for the field type itself). A
-     * reference is checked to be an id here; whether it names an item of the template is the
+     * reference is checked to be an id here; whether it names an item of the package is the
      * PackageChecker's business (references()).
      *
      * @param array<string, mixed> $settings
@@ -108,7 +108,7 @@ final class FieldTypeCatalog
             $required = 'object' === $setting['kind'] && true !== ($setting['nullable'] ?? false);
             if (!\array_key_exists($key, $settings)) {
                 if ($required) {
-                    $problems[$key][] = 'Required: the id of an object of the template.';
+                    $problems[$key][] = 'Required: the id of an object of the package.';
                 }
                 continue;
             }
@@ -160,7 +160,7 @@ final class FieldTypeCatalog
             'choice' => \in_array($value, self::choices($setting), true) ? null : \sprintf('Must be one of %s.', implode(', ', self::choices($setting))),
             'object', 'field' => \is_string($value) && 1 === preg_match(Format::ID_PATTERN, $value)
                 ? null
-                : \sprintf('Must be the id of %s of the template.', 'object' === $setting['kind'] ? 'an object' : 'a field'),
+                : \sprintf('Must be the id of %s of the package.', 'object' === $setting['kind'] ? 'an object' : 'a field'),
             'options' => self::optionsProblem($value),
             default => \sprintf('The catalog describes this setting with an unknown kind "%s".', \is_string($setting['kind']) ? $setting['kind'] : '?'),
         };

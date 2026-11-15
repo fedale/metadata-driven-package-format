@@ -2,20 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
- * The template format: what every document and every package must look like.
+ * The package format: what every document and every package must look like.
  *
  * The library depends on symfony/yaml and opis/json-schema only: metadata-driven installs
- * templates with it, the catalog checks them with it on publish.
+ * packages with it, the catalog checks them with it on publish.
  */
 final class Format
 {
-    public const string VERSION = 'metadata-driven/v1';
+    public const string VERSION = 'metadata-driven/v2';
+
+    /**
+     * The versions read: a document of format v1 is read as its v2 equivalent (DocumentCodec),
+     * so that everything past the reader sees v2 only.
+     */
+    public const array READS = ['metadata-driven/v1', self::VERSION];
 
     /** The manifest of a package, at its root. */
-    public const string MANIFEST = 'template.yaml';
+    public const string MANIFEST = 'package.yaml';
+
+    /** The manifest of a package of format v1, read when there is no package.yaml. */
+    public const string MANIFEST_V1 = 'template.yaml';
 
     /** vendor/name, as Composer names packages: "acme/geo-italy". */
     public const string NAME_PATTERN = '~^[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$~';
@@ -30,10 +39,10 @@ final class Format
     public const string MACHINE_NAME_PATTERN = '~^[a-z][a-z0-9]*(_[a-z0-9]+)*$~';
 
     /**
-     * The first segment of the ids of a template's items: its vendor, as an id segment.
+     * The first segment of the ids of a package's items: its vendor, as an id segment.
      */
-    public static function idPrefix(string $templateName): string
+    public static function idPrefix(string $packageName): string
     {
-        return str_replace('-', '_', explode('/', $templateName)[0]);
+        return str_replace('-', '_', explode('/', $packageName)[0]);
     }
 }

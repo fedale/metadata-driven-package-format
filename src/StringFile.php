@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * A data file whose content is at hand: a CSV file written by an export.

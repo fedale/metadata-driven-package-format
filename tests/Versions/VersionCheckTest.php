@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests\Versions;
+namespace Fedale\PackageFormat\Tests\Versions;
 
-use Fedale\TemplateFormat\Document;
-use Fedale\TemplateFormat\DocumentCodec;
-use Fedale\TemplateFormat\DocumentKind;
-use Fedale\TemplateFormat\FieldTypes\FieldTypeCatalog;
-use Fedale\TemplateFormat\Package;
-use Fedale\TemplateFormat\PackageDirectory;
-use Fedale\TemplateFormat\Versions\ItemStates;
-use Fedale\TemplateFormat\Versions\VersionCheck;
+use Fedale\PackageFormat\Document;
+use Fedale\PackageFormat\DocumentCodec;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;
+use Fedale\PackageFormat\Package;
+use Fedale\PackageFormat\PackageDirectory;
+use Fedale\PackageFormat\Versions\ItemStates;
+use Fedale\PackageFormat\Versions\VersionCheck;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -64,7 +64,7 @@ final class VersionCheckTest extends TestCase
         $base = self::fixture();
 
         self::assertSame(
-            ['template.yaml: spec.migrations: migration steps need a new major version, 1.1.0 is not one.'],
+            ['package.yaml: spec.migrations: migration steps need a new major version, 1.1.0 is not one.'],
             VersionCheck::problems(self::states($base), self::states($base), '1.0.0', '1.1.0', true),
         );
     }
@@ -98,7 +98,7 @@ final class VersionCheckTest extends TestCase
     }
 
     /**
-     * @return array<string, \Fedale\TemplateFormat\Versions\ItemState>
+     * @return array<string, \Fedale\PackageFormat\Versions\ItemState>
      */
     private static function states(Package $package): array
     {

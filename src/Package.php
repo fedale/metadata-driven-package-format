@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
- * A template: its manifest and its documents.
+ * A package: its manifest and its documents.
  */
 final readonly class Package
 {

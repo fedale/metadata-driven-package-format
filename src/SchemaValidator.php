@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 use Opis\JsonSchema\Errors\ErrorFormatter;
 use Opis\JsonSchema\Helper;
 use Opis\JsonSchema\Validator;
 
 /**
- * Checks the spec of a document against the JSON Schema of its kind (Resources/schema/v1/).
- * The same schemas give editors autocompletion on a template's files.
+ * Checks the spec of a document against the JSON Schema of its kind (Resources/schema/v2/).
+ * The same schemas give editors autocompletion on a package's files.
  */
 final class SchemaValidator
 {
-    private const string DIRECTORY = __DIR__.'/Resources/schema/v1';
+    private const string DIRECTORY = __DIR__.'/Resources/schema/v2';
 
     private ?Validator $validator = null;
 
@@ -65,6 +65,6 @@ final class SchemaValidator
 
     private static function schemaId(DocumentKind $kind): string
     {
-        return 'urn:metadata-driven:schema:v1:'.strtolower($kind->value);
+        return 'urn:metadata-driven:schema:v2:'.strtolower($kind->value);
     }
 }

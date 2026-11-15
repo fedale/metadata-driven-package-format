@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Versions;
+namespace Fedale\PackageFormat\Versions;
 
-use Fedale\TemplateFormat\Document;
+use Fedale\PackageFormat\Document;
 
 /**
- * One item of a template in one of its three states (installed, new, local), normalized by
+ * One item of a package in one of its three states (installed, new, local), normalized by
  * ItemStates so that equal means "the same".
  */
 final readonly class ItemState

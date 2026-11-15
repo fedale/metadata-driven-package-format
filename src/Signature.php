@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat;
+namespace Fedale\PackageFormat;
 
 /**
  * Ed25519 signatures of index entries (libsodium). A signature covers the format, the
- * template's name, its version, its archive's sha256 and whether the version is yanked: it
+ * package's name, its version, its archive's sha256 and whether the version is yanked: it
  * vouches for that archive as that version, cannot be moved to another entry, and a yanked
  * version cannot be listed again without the key.
  *
@@ -68,6 +68,6 @@ final class Signature
 
     private static function message(IndexEntry $entry): string
     {
-        return implode("\n", [TemplateIndex::FORMAT, $entry->name, $entry->version, $entry->sha256, $entry->yanked ? 'yanked' : 'listed']);
+        return implode("\n", [RepositoryIndex::FORMAT, $entry->name, $entry->version, $entry->sha256, $entry->yanked ? 'yanked' : 'listed']);
     }
 }

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace Fedale\TemplateFormat\Tests;
+namespace Fedale\PackageFormat\Tests;
 
-use Fedale\TemplateFormat\Document;
-use Fedale\TemplateFormat\DocumentKind;
-use Fedale\TemplateFormat\InvalidPackage;
-use Fedale\TemplateFormat\Package;
-use Fedale\TemplateFormat\SeedRecords;
-use Fedale\TemplateFormat\Tests\Support\RemovesDirectories;
+use Fedale\PackageFormat\Document;
+use Fedale\PackageFormat\DocumentKind;
+use Fedale\PackageFormat\InvalidPackage;
+use Fedale\PackageFormat\Package;
+use Fedale\PackageFormat\SeedRecords;
+use Fedale\PackageFormat\Tests\Support\RemovesDirectories;
 use PHPUnit\Framework\TestCase;
 
 final class SeedRecordsTest extends TestCase
@@ -61,7 +61,7 @@ final class SeedRecordsTest extends TestCase
 
     private function package(): Package
     {
-        return new Package(new Document(DocumentKind::Template, 'acme/shop', [], 'template.yaml'), [], $this->directory);
+        return new Package(new Document(DocumentKind::Package, 'acme/shop', [], 'package.yaml'), [], $this->directory);
     }
 
     private function seed(): Document
