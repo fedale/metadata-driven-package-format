@@ -98,22 +98,22 @@ final class PackageChecker
             }
             $at = 'spec.requires.'.$name;
             if ($name === $package->name()) {
-                $problems[] = new Problem(Format::MANIFEST, $at, 'A package does not require itself.');
+                $problems[] = new Problem($package->manifest->path, $at, 'A package does not require itself.');
                 continue;
             }
             try {
                 $allowed = Constraint::parse(\is_scalar($constraint) ? (string) $constraint : '');
             } catch (\InvalidArgumentException $e) {
-                $problems[] = new Problem(Format::MANIFEST, $at, $e->getMessage());
+                $problems[] = new Problem($package->manifest->path, $at, $e->getMessage());
                 continue;
             }
             $requirement = $given[$name] ?? null;
             if (null === $requirement) {
-                $problems[] = new Problem(Format::MANIFEST, $at, \sprintf('%s is required: it must be installed, or given to check against.', $name));
+                $problems[] = new Problem($package->manifest->path, $at, \sprintf('%s is required: it must be installed, or given to check against.', $name));
                 continue;
             }
             if (!$allowed->allows($requirement->version())) {
-                $problems[] = new Problem(Format::MANIFEST, $at, \sprintf('%s %s does not fit %s.', $name, $requirement->version(), $allowed));
+                $problems[] = new Problem($package->manifest->path, $at, \sprintf('%s %s does not fit %s.', $name, $requirement->version(), $allowed));
                 continue;
             }
             $indexes[$name] = new PackageIndex($requirement->documents);
