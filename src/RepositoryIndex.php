@@ -11,16 +11,16 @@ namespace Fedale\PackageFormat;
  *
  *     {
  *       "format": "metadata-driven/index/v1",
- *       "templates": {
+ *       "packages": {
  *         "acme/shop": {
  *           "1.0.0": { "url": "acme-shop-1.0.0.tar.gz", "sha256": "…", "requires": { "format": "metadata-driven/v2" } }
  *         }
  *       }
  *     }
  *
- * A relative "url" is resolved against the index's own address. The index format is still v1:
- * its "templates" key keeps the name packages had then. Each version says the package format it
- * is written in; the versions of a format this library does not read are left out (usable()).
+ * A relative "url" is resolved against the index's own address. Each version says the package
+ * format it is written in; latest() leaves out the versions of a format this library does not
+ * read.
  */
 final class RepositoryIndex
 {
@@ -49,12 +49,12 @@ final class RepositoryIndex
         } catch (\JsonException $e) {
             throw new InvalidIndex(\sprintf('The index at %s is not JSON: %s.', $address, $e->getMessage()), 0, $e);
         }
-        if (!\is_array($data) || self::FORMAT !== ($data['format'] ?? null) || !\is_array($data['templates'] ?? null)) {
+        if (!\is_array($data) || self::FORMAT !== ($data['format'] ?? null) || !\is_array($data['packages'] ?? null)) {
             throw new InvalidIndex(\sprintf('The index at %s is not of format %s.', $address, self::FORMAT));
         }
 
         $entries = [];
-        foreach ($data['templates'] as $name => $versions) {
+        foreach ($data['packages'] as $name => $versions) {
             $name = (string) $name;
             if (1 !== preg_match(Format::NAME_PATTERN, $name) || !\is_array($versions)) {
                 throw new InvalidIndex(\sprintf('The index at %s lists "%s", which is no package name.', $address, $name));
@@ -152,7 +152,7 @@ final class RepositoryIndex
             }
         }
 
-        return json_encode(['format' => self::FORMAT, 'templates' => $packages], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR)."\n";
+        return json_encode(['format' => self::FORMAT, 'packages' => $packages], \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR)."\n";
     }
 
     private static function resolve(string $url, string $address): string

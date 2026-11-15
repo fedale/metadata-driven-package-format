@@ -16,7 +16,7 @@ final class RepositoryIndexTest extends TestCase
     public function testResolvesArchivesAgainstTheIndexAndPicksTheNewestUsableVersion(): void
     {
         $sha = str_repeat('a', 64);
-        $index = RepositoryIndex::fromJson((string) json_encode(['format' => RepositoryIndex::FORMAT, 'templates' => ['acme/shop' => [
+        $index = RepositoryIndex::fromJson((string) json_encode(['format' => RepositoryIndex::FORMAT, 'packages' => ['acme/shop' => [
             '1.0.0' => ['url' => 'acme-shop-1.0.0.tar.gz', 'sha256' => $sha],
             '1.10.0' => ['url' => 'https://cdn.example/acme-shop-1.10.0.tar.gz', 'sha256' => $sha],
             '1.2.0' => ['url' => 'acme-shop-1.2.0.tar.gz', 'sha256' => $sha],
@@ -37,9 +37,11 @@ final class RepositoryIndexTest extends TestCase
     public function testRefusesWhatIsNotAnIndex(): void
     {
         foreach ([
-            '{"templates": {}}' => 'is not of format metadata-driven/index/v1',
-            '{"format": "metadata-driven/index/v1", "templates": {"Shop": {}}}' => 'lists "Shop", which is no package name',
-            '{"format": "metadata-driven/index/v1", "templates": {"acme/shop": {"1.0.0": {"url": "a.tar.gz", "sha256": "abc"}}}}' => 'it needs a url and a sha256',
+            '{"packages": {}}' => 'is not of format metadata-driven/index/v1',
+            '{"format": "metadata-driven/index/v1", "templates": {}}' => 'is not of format metadata-driven/index/v1',
+            '{"format": "metadata-driven/index/v2", "packages": {}}' => 'is not of format metadata-driven/index/v1',
+            '{"format": "metadata-driven/index/v1", "packages": {"Shop": {}}}' => 'lists "Shop", which is no package name',
+            '{"format": "metadata-driven/index/v1", "packages": {"acme/shop": {"1.0.0": {"url": "a.tar.gz", "sha256": "abc"}}}}' => 'it needs a url and a sha256',
             'not json' => 'is not JSON',
         ] as $json => $message) {
             try {
