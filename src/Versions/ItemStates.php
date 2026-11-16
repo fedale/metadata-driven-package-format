@@ -39,7 +39,7 @@ final class ItemStates
                 DocumentKind::View => [new ItemState('view', $document->id, self::view($document->spec), $document)],
                 DocumentKind::Form => [new ItemState('form', $document->id, ['name' => $document->spec['name'] ?? null, 'definition' => $document->spec['definition'] ?? null], $document)],
                 DocumentKind::Translations => self::translations($document, $names),
-                DocumentKind::Workflow => [new ItemState('workflow', $document->id, ['name' => $document->spec['name'] ?? null, 'description' => $document->spec['description'] ?? null, 'definition' => $document->spec['definition'] ?? null], $document)],
+                DocumentKind::Workflow => [new ItemState('workflow', $document->id, ['name' => $document->spec['name'] ?? null, 'description' => $document->spec['description'] ?? null, 'definition' => self::keySorted($document->spec['definition'] ?? null)], $document)],
                 default => [],
             } as $state) {
                 $states[$state->key()] = $state;
@@ -122,6 +122,23 @@ final class ItemStates
         }
 
         return $states;
+    }
+
+    /**
+     * A map's keys sorted, at every depth; a list keeps its order. A workflow's definition read
+     * back from storage (PostgreSQL's jsonb orders keys its own way) is the same item.
+     */
+    private static function keySorted(mixed $value): mixed
+    {
+        if (!\is_array($value)) {
+            return $value;
+        }
+        $value = array_map(self::keySorted(...), $value);
+        if (!array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
     }
 
     /**
