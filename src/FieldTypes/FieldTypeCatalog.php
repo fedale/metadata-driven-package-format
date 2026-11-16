@@ -162,6 +162,7 @@ final class FieldTypeCatalog
                 ? null
                 : \sprintf('Must be the id of %s of the package.', 'object' === $setting['kind'] ? 'an object' : 'a field'),
             'options' => self::optionsProblem($value),
+            'transitions' => self::transitionsProblem($value),
             default => \sprintf('The catalog describes this setting with an unknown kind "%s".', \is_string($setting['kind']) ? $setting['kind'] : '?'),
         };
     }
@@ -202,6 +203,27 @@ final class FieldTypeCatalog
     private static function stringKeys(array $map): array
     {
         return array_filter($map, is_string(...), \ARRAY_FILTER_USE_KEY);
+    }
+
+    /**
+     * A Status field's transitions: name, label, the states it leaves, the one it reaches, the
+     * roles that may take it. Whether they name states of the field is the app's to check.
+     */
+    private static function transitionsProblem(mixed $value): ?string
+    {
+        if (!\is_array($value) || !array_is_list($value)) {
+            return 'Must be a list of transitions, each with a name, a label, from, to and roles.';
+        }
+        $strings = static fn (mixed $list): bool => \is_array($list) && array_is_list($list) && [] === array_filter($list, static fn (mixed $item): bool => !\is_string($item));
+        foreach ($value as $transition) {
+            if (!\is_array($transition) || !\is_string($transition['name'] ?? null) || !\is_string($transition['label'] ?? null)
+                || !$strings($transition['from'] ?? null) || !\is_string($transition['to'] ?? null) || !$strings($transition['roles'] ?? [])
+                || [] !== array_diff_key($transition, ['name' => true, 'label' => true, 'from' => true, 'to' => true, 'roles' => true])) {
+                return 'Every transition is a map with a name, a label, from (a list of states), to (a state) and roles (a list), nothing else.';
+            }
+        }
+
+        return null;
     }
 
     private static function optionsProblem(mixed $value): ?string

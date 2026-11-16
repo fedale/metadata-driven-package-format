@@ -52,4 +52,13 @@ final class FieldTypeCatalogTest extends TestCase
         );
         self::assertSame(['' => ['Unknown setting: type "email" has no settings.']], array_slice($catalog->check('email', ['' => 1]), 0, 1));
     }
+
+    public function testChecksTheTransitionsOfAStatus(): void
+    {
+        $catalog = new FieldTypeCatalog();
+        $states = [['value' => 'draft', 'label' => 'Draft'], ['value' => 'sent', 'label' => 'Sent']];
+
+        self::assertSame([], $catalog->check('status', ['states' => $states, 'transitions' => [['name' => 'send', 'label' => 'Send', 'from' => ['draft'], 'to' => 'sent', 'roles' => ['ROLE_CLERK']]]]));
+        self::assertNotSame([], $catalog->check('status', ['states' => $states, 'transitions' => [['name' => 'send', 'from' => 'draft', 'to' => 'sent']]]));
+    }
 }
