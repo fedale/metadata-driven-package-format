@@ -26,6 +26,11 @@
         "default": { "kind": "string", "nullable": true, "default": null },
         "display": { "kind": "choice", "choices": ["dropdown", "radio"], "default": "dropdown" }
     },
+    "status": {
+        "states": { "kind": "options", "default": [] },
+        "initial": { "kind": "string", "nullable": true, "default": null },
+        "transitions": { "kind": "transitions", "default": [] }
+    },
     "password": {
         "minLength": { "kind": "integer", "min": 1, "max": 128, "default": 8 },
         "requireMixedCase": { "kind": "boolean", "default": false },
