@@ -1,0 +1,9 @@
+format: metadata-driven/v2
+kind: Workflow
+id: acme.workflow.tag_name
+spec:
+  name: Tag name
+  definition:
+    trigger: { on: called, input: [{ name: sku, type: text, required: true }] }
+    steps:
+      - { key: back, type: return, values: { tag: 'restock {{ $trigger.input.sku }}' } }

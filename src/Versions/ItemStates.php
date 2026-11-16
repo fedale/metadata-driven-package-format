@@ -15,7 +15,7 @@ use Fedale\PackageFormat\Package;
  * upgrade compares them item by item.
  *
  * The items: an object's own properties ("object:<id>"), each field ("field:<id>"), each view,
- * each form, and each translation ("translation:<locale>:<key>", its key naming objects, fields
+ * each form, each workflow, and each translation ("translation:<locale>:<key>", its key naming objects, fields
  * and forms by id, so that a rename does not make it another item). Defaults are filled in and
  * lists that are sets are sorted: a package that leaves a default out equals one that writes it.
  */
@@ -39,6 +39,7 @@ final class ItemStates
                 DocumentKind::View => [new ItemState('view', $document->id, self::view($document->spec), $document)],
                 DocumentKind::Form => [new ItemState('form', $document->id, ['name' => $document->spec['name'] ?? null, 'definition' => $document->spec['definition'] ?? null], $document)],
                 DocumentKind::Translations => self::translations($document, $names),
+                DocumentKind::Workflow => [new ItemState('workflow', $document->id, ['name' => $document->spec['name'] ?? null, 'description' => $document->spec['description'] ?? null, 'definition' => $document->spec['definition'] ?? null], $document)],
                 default => [],
             } as $state) {
                 $states[$state->key()] = $state;

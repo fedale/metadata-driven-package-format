@@ -70,16 +70,16 @@ final class DocumentCodecTest extends TestCase
         yield 'everything wrong' => ["format: v2\nkind: Thing\nid: Product\nspec: [1]\nname: product\n", [
             'objects/product.yaml: name: Unknown key: a document has format, kind, id and spec only.',
             'objects/product.yaml: format: Must be "metadata-driven/v2".',
-            'objects/product.yaml: kind: Must be one of Package, Object, Form, View, Translations, Seed.',
+            'objects/product.yaml: kind: Must be one of Package, Object, Form, View, Translations, Seed, Workflow.',
             'objects/product.yaml: id: Lowercase dot-separated segments, at least two, the first naming the vendor: e.g. acme.product.',
             'objects/product.yaml: spec: Must be a map.',
         ]];
         yield 'a v1 document of kind Package' => ["format: metadata-driven/v1\nkind: Package\nid: acme/shop\nspec: {}\n", [
-            'objects/product.yaml: kind: Must be one of Template, Object, Form, View, Translations, Seed.',
+            'objects/product.yaml: kind: Must be one of Template, Object, Form, View, Translations, Seed, Workflow.',
             'objects/product.yaml: id: Lowercase dot-separated segments, at least two, the first naming the vendor: e.g. acme.product.',
         ]];
         yield 'a v2 document of kind Template' => ["format: metadata-driven/v2\nkind: Template\nid: acme/shop\nspec: {}\n", [
-            'objects/product.yaml: kind: Must be one of Package, Object, Form, View, Translations, Seed.',
+            'objects/product.yaml: kind: Must be one of Package, Object, Form, View, Translations, Seed, Workflow.',
             'objects/product.yaml: id: Lowercase dot-separated segments, at least two, the first naming the vendor: e.g. acme.product.',
         ]];
         yield 'a manifest named like an item' => ["format: metadata-driven/v2\nkind: Package\nid: acme.shop\nspec: {}\n", [

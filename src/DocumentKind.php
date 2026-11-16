@@ -18,6 +18,8 @@ enum DocumentKind: string
     case Translations = 'Translations';
     /** Records of one object, written at install. */
     case Seed = 'Seed';
+    /** A workflow, installed as a draft: its objects, and the workflows it calls, as ids. */
+    case Workflow = 'Workflow';
 
     /**
      * The directory of the package its documents are written to; the manifest is at the root.
@@ -31,6 +33,7 @@ enum DocumentKind: string
             self::View => 'views',
             self::Translations => 'translations',
             self::Seed => 'seeds',
+            self::Workflow => 'workflows',
         };
     }
 }

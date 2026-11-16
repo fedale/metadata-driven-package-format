@@ -34,6 +34,9 @@ final class PackageIndex
     /** @var list<string> the form ids */
     private array $forms = [];
 
+    /** @var array<string, true> workflow ids */
+    private array $workflows = [];
+
     /**
      * @param list<Document> $documents
      */
@@ -61,6 +64,9 @@ final class PackageIndex
 
             if (DocumentKind::Form === $document->kind) {
                 $this->forms[] = $document->id;
+            }
+            if (DocumentKind::Workflow === $document->kind) {
+                $this->workflows[$document->id] = true;
             }
             if (DocumentKind::Object === $document->kind) {
                 $this->objects[$document->id] = true;
@@ -105,6 +111,24 @@ final class PackageIndex
         return null;
     }
 
+    /**
+     * Whether the id names a workflow of the package or of a package it requires: one a
+     * run_workflow step may call.
+     */
+    public function hasWorkflow(string $id): bool
+    {
+        if (isset($this->workflows[$id])) {
+            return true;
+        }
+        foreach ($this->required as $index) {
+            if ($index->hasWorkflow($id)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function ownerOf(string $fieldId): ?string
     {
         if (isset($this->fieldOwners[$fieldId])) {
@@ -142,13 +166,13 @@ final class PackageIndex
     }
 
     /**
-     * The package's own ids, by kind: objects, fields, forms.
+     * The package's own ids, by kind: objects, fields, forms, workflows.
      *
-     * @return array{objects: list<string>, fields: list<string>, forms: list<string>}
+     * @return array{objects: list<string>, fields: list<string>, forms: list<string>, workflows: list<string>}
      */
     public function ownIds(): array
     {
-        return ['objects' => array_keys($this->objects), 'fields' => array_keys($this->fieldOwners), 'forms' => $this->forms];
+        return ['objects' => array_keys($this->objects), 'fields' => array_keys($this->fieldOwners), 'forms' => $this->forms, 'workflows' => array_keys($this->workflows)];
     }
 
     /**
@@ -179,7 +203,7 @@ final class PackageIndex
     }
 
     /**
-     * What must be unique in a package beyond ids: object names, form names, a view's name per
+     * What must be unique in a package beyond ids: object, form and workflow names, a view's name per
      * object and kind, one Translations document per language, one Seed per object.
      *
      * @return array{string, string}|null the unique key, and where the document holds it
@@ -189,7 +213,7 @@ final class PackageIndex
         $spec = $document->spec;
 
         return match ($document->kind) {
-            DocumentKind::Object, DocumentKind::Form => \is_string($spec['name'] ?? null) ? [$document->kind->value.' '.$spec['name'], 'spec.name'] : null,
+            DocumentKind::Object, DocumentKind::Form, DocumentKind::Workflow => \is_string($spec['name'] ?? null) ? [$document->kind->value.' '.$spec['name'], 'spec.name'] : null,
             DocumentKind::View => \is_string($spec['object'] ?? null) && \is_string($spec['kind'] ?? null) && \is_string($spec['name'] ?? null)
                 ? [\sprintf('View %s %s %s', $spec['object'], $spec['kind'], $spec['name']), 'spec.name']
                 : null,

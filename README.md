@@ -4,7 +4,8 @@ The package format of [metadata-driven](../metadata-driven): what a package look
 tools to read, check, pack and list one. metadata-driven installs and upgrades packages with it;
 the package catalog checks them with it on publish.
 
-It is data only: a package holds objects, forms, views, translations and seeds, never code.
+It is data only: a package holds objects, forms, views, translations, seeds and workflows, never
+code.
 
 Until 1.2 this library was `fedale/metadata-driven-template-format`, namespace
 `Fedale\TemplateFormat`, and packages were called templates. 2.0 is the same library under its new
@@ -23,7 +24,7 @@ name: see [Format v2](#format-v2).
 | `SeedRecords` | The records of a seed, inline or from a CSV file |
 | `FieldTypes\FieldTypeCatalog` | The field types of format v1 and their settings, so settings are checked without metadata-driven |
 | `Constraint` | A version constraint of `spec.requires`: `^1.2`, `~1.2` or an exact `1.2.3` |
-| `Versions\ItemStates`, `Versions\VersionCheck` | A package's items (each object, field, view, form, translation) in a form that compares equal when they mean the same, and whether a version's number fits what it changed against an earlier version: a patch changes labels, layouts, forms and translations; a minor adds and changes settings; removals, renames and migration steps need a major |
+| `Versions\ItemStates`, `Versions\VersionCheck` | A package's items (each object, field, view, form, workflow, translation) in a form that compares equal when they mean the same, and whether a version's number fits what it changed against an earlier version: a patch changes labels, layouts, forms, translations and a workflow's description; a minor adds and changes settings and a workflow's definition; removals, renames (a workflow's too: it is called by its name) and migration steps need a major |
 
 The schemas live in `src/Resources/schema/v2/`, the field types in
 `src/Resources/field-types.v1.json`.
@@ -74,6 +75,28 @@ $problems = VersionCheck::problems($states->of($previous), $states->of($next), '
 ```
 
 Seed records are not compared: a version that only changes records fits any number.
+
+### Workflows
+
+Since 2.3, a package may carry workflows (`workflows/<name>.yaml`, kind `Workflow`): its name,
+its description, and its definition as metadata-driven takes it, the objects of its trigger and
+steps, and the workflow each `run_workflow` step calls, given as ids (fields by name, within
+their object). The checker resolves those ids, in the package and the packages it requires; the
+rest of the definition is metadata-driven's to check. The platform's events are not allowed:
+they are the system admin's. metadata-driven installs a package's workflows as drafts.
+
+```yaml
+format: metadata-driven/v2
+kind: Workflow
+id: acme.workflow.restock
+spec:
+  name: Restock
+  definition:
+    trigger: { on: updated, object: acme.product, when: after, fields: [seats] }
+    steps:
+      - { key: empty, type: filter, when: { field: $trigger.record.seats, op: eq, value: 0 } }
+      - { key: tag, type: create_record, object: acme.tag, values: { name: 'restock {{ $trigger.record.sku }}' } }
+```
 
 What only metadata-driven can tell (a form that does not fit its objects, a value that does not
 fit its field) is checked there, at install.

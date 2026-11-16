@@ -92,6 +92,30 @@ final class PackageCheckerTest extends TestCase
 
             return $spec;
         }, 'forms/catalogue.yaml: spec.definition.sections.0.via: "acme.category.title" is a field of "acme.category", not of "acme.product".'];
+        $restock = 'workflows/restock.yaml';
+        /** @param \Closure(array<mixed>): array<mixed> $change */
+        $definition = static fn (\Closure $change): \Closure => static function (array $spec) use ($change): array {
+            $spec['definition'] = $change(self::map($spec['definition'] ?? null));
+
+            return $spec;
+        };
+        yield 'a workflow on no object' => [$restock, $definition(static fn (array $definition): array => ['trigger' => ['object' => 'acme.order'] + self::map($definition['trigger'] ?? null)] + $definition), 'workflows/restock.yaml: spec.definition.trigger.object: No object of the package has the id "acme.order".'];
+        yield 'a step on no object' => [$restock, $definition(static function (array $definition): array {
+            $steps = self::map($definition['steps'] ?? null);
+            $steps[2] = ['object' => 'acme.order'] + self::map($steps[2] ?? null);
+            $definition['steps'] = $steps;
+
+            return $definition;
+        }), 'workflows/restock.yaml: spec.definition.steps.2.object: No object of the package has the id "acme.order".'];
+        yield 'a call to no workflow' => [$restock, $definition(static function (array $definition): array {
+            $steps = self::map($definition['steps'] ?? null);
+            $steps[0] = ['key' => 'check', 'type' => 'if', 'branches' => [['steps' => [['key' => 'call', 'type' => 'run_workflow', 'workflow' => 'acme.workflow.nothing']]]]];
+            $definition['steps'] = $steps;
+
+            return $definition;
+        }), 'workflows/restock.yaml: spec.definition.steps.0.branches.0.steps.0.workflow: No workflow of the package has the id "acme.workflow.nothing".'];
+        yield 'a workflow on a platform event' => [$restock, $definition(static fn (array $definition): array => ['trigger' => ['on' => 'member_added']] + $definition), 'workflows/restock.yaml: spec.definition.trigger.on: The data should match one item from enum'];
+        yield 'two workflows with one name' => ['workflows/tag_name.yaml', static fn (array $spec): array => ['name' => 'Restock'] + $spec, 'workflows/tag_name.yaml: spec.name: Same as in workflows/restock.yaml.'];
     }
 
     public function testADocumentBreakingItsSchemaIsNotCheckedFurther(): void
