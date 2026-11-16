@@ -96,6 +96,9 @@ final class VersionCheckTest extends TestCase
         self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: a rename needs a new major version, 1.1.0 is not one.'], self::problems($base, $renamed, '1.0.0', '1.1.0'));
         self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: a removal needs a new major version, 1.1.0 is not one.'], self::problems($base, $without, '1.0.0', '1.1.0'));
         self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: an addition needs a new minor version, 1.0.1 is not one.'], self::problems($without, $base, '1.0.0', '1.0.1'));
+        // Its keys in another order: the same definition.
+        $reordered = self::withWorkflow($base, static fn (array $spec): array => ['definition' => array_reverse(\is_array($spec['definition']) ? $spec['definition'] : [], true)] + $spec);
+        self::assertSame([], self::problems($base, $reordered, '1.0.0', '1.0.1'));
     }
 
     /**
