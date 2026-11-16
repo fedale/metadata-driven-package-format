@@ -47,6 +47,8 @@ final class PackageDirectoryTest extends TestCase
             'translations/it.yaml',
             'views/product.form.main.yaml',
             'views/product.grid.main.yaml',
+            'workflows/restock.yaml',
+            'workflows/tag_name.yaml',
         ], array_map(static fn (Document $document): string => $document->path, $package->documents));
     }
 

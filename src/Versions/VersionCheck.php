@@ -12,9 +12,9 @@ use Fedale\PackageFormat\Format;
  * the version published before it. The items come from ItemStates.
  *
  * - a new major version may change anything;
- * - a minor one may add items and change their settings, conditions, search, unique sets, but
- *   removes and renames nothing, and carries no migration steps;
- * - a patch only changes labels, layouts, forms and translations.
+ * - a minor one may add items and change their settings, conditions, search, unique sets, a
+ *   workflow's definition, but removes and renames nothing, and carries no migration steps;
+ * - a patch only changes labels, layouts, forms, translations and a workflow's description.
  *
  * A package whose number lies about its changes is refused: who installs a minor version
  * expects to lose nothing.
@@ -58,10 +58,13 @@ final class VersionCheck
                 continue;
             }
             $changed = array_keys(array_filter($state->value, static fn (mixed $value, int|string $key): bool => ($old->value[$key] ?? null) !== $value, \ARRAY_FILTER_USE_BOTH));
-            if (\in_array('name', $changed, true) && \in_array($state->kind, ['object', 'field'], true)) {
+            // A workflow is called by its name: renamed, the workflows calling it break.
+            if (\in_array('name', $changed, true) && \in_array($state->kind, ['object', 'field', 'workflow'], true)) {
                 $needs('a rename', $state, 'major');
             } elseif (!$minor && \in_array($state->kind, ['object', 'field'], true) && [] !== array_diff($changed, ['label', 'plural'])) {
                 $needs(\sprintf('a change of %s', implode(', ', array_diff($changed, ['label', 'plural']))), $state, 'minor');
+            } elseif (!$minor && 'workflow' === $state->kind && \in_array('definition', $changed, true)) {
+                $needs('a change of definition', $state, 'minor');
             }
         }
 

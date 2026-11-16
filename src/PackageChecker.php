@@ -63,6 +63,7 @@ final class PackageChecker
                 DocumentKind::Object => $this->checkObject($document, $index),
                 DocumentKind::View => $this->checkView($document, $index),
                 DocumentKind::Form => $this->checkForm($document, $index),
+                DocumentKind::Workflow => self::checkWorkflow($document, $index),
                 default => [],
             }];
         }
@@ -155,6 +156,7 @@ final class PackageChecker
                 $taken = match ($document->kind) {
                     DocumentKind::Object => \in_array($document->id, $required->ownIds()['objects'], true),
                     DocumentKind::Form => \in_array($document->id, $required->ownIds()['forms'], true),
+                    DocumentKind::Workflow => \in_array($document->id, $required->ownIds()['workflows'], true),
                     default => false,
                 };
                 if ($taken) {
@@ -416,6 +418,53 @@ final class PackageChecker
         }
 
         return $owner === $objectId ? null : \sprintf('"%s" is a field of "%s", not of "%s".', $fieldId, $owner, $objectId);
+    }
+
+    /**
+     * A workflow's references: its trigger's object and its steps', objects of the package or of
+     * a package it requires; the workflow each run_workflow step calls, a workflow of either. Its
+     * fields are named by name, within their object: whether they exist, and the rest of the
+     * definition, is metadata-driven's to check, at install.
+     *
+     * @return list<Problem>
+     */
+    private static function checkWorkflow(Document $workflow, PackageIndex $index): array
+    {
+        /** @var array<string, mixed> $definition the schema guarantees a map */
+        $definition = $workflow->spec['definition'];
+        $trigger = \is_array($definition['trigger'] ?? null) ? $definition['trigger'] : [];
+        $problems = [];
+        if (\is_string($trigger['object'] ?? null) && !$index->hasObject($trigger['object'])) {
+            $problems[] = new Problem($workflow->path, 'spec.definition.trigger.object', \sprintf('No object of the package has the id "%s".', $trigger['object']));
+        }
+
+        return [...$problems, ...self::checkSteps($workflow->path, 'spec.definition.steps', $definition['steps'] ?? null, $index)];
+    }
+
+    /**
+     * @return list<Problem>
+     */
+    private static function checkSteps(string $path, string $at, mixed $steps, PackageIndex $index): array
+    {
+        $problems = [];
+        foreach (\is_array($steps) ? $steps : [] as $i => $step) {
+            if (!\is_array($step)) {
+                continue;
+            }
+            $here = $at.'.'.$i;
+            if (\is_string($step['object'] ?? null) && !$index->hasObject($step['object'])) {
+                $problems[] = new Problem($path, $here.'.object', \sprintf('No object of the package has the id "%s".', $step['object']));
+            }
+            if ('run_workflow' === ($step['type'] ?? null) && \is_string($step['workflow'] ?? null) && !$index->hasWorkflow($step['workflow'])) {
+                $problems[] = new Problem($path, $here.'.workflow', \sprintf('No workflow of the package has the id "%s".', $step['workflow']));
+            }
+            foreach (\is_array($step['branches'] ?? null) ? $step['branches'] : [] as $b => $branch) {
+                $problems = [...$problems, ...self::checkSteps($path, $here.'.branches.'.$b.'.steps', \is_array($branch) ? ($branch['steps'] ?? null) : null, $index)];
+            }
+            $problems = [...$problems, ...self::checkSteps($path, $here.'.steps', $step['steps'] ?? null, $index)];
+        }
+
+        return $problems;
     }
 
     /**

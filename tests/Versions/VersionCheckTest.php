@@ -79,6 +79,26 @@ final class VersionCheckTest extends TestCase
     }
 
     /**
+     * A workflow: its description in a patch, its definition in a minor, its name in a major
+     * (the workflows calling it name it); added in a minor, removed in a major.
+     */
+    public function testAWorkflowsChangesFitTheirNumber(): void
+    {
+        $base = self::fixture();
+        $described = self::withWorkflow($base, static fn (array $spec): array => ['description' => 'Restocks.'] + $spec);
+        $changed = self::withWorkflow($base, static fn (array $spec): array => ['definition' => ['trigger' => ['on' => 'manual', 'object' => 'acme.product', 'label' => 'Restock'], 'steps' => [['key' => 'a', 'type' => 'refuse', 'message' => 'No.']]]] + $spec);
+        $renamed = self::withWorkflow($base, static fn (array $spec): array => ['name' => 'Restock now'] + $spec);
+        $without = new Package($base->manifest, array_values(array_filter($base->documents, static fn (Document $document): bool => 'workflows/restock.yaml' !== $document->path)), $base->directory);
+
+        self::assertSame([], self::problems($base, $described, '1.0.0', '1.0.1'));
+        self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: a change of definition needs a new minor version, 1.0.1 is not one.'], self::problems($base, $changed, '1.0.0', '1.0.1'));
+        self::assertSame([], self::problems($base, $changed, '1.0.0', '1.1.0'));
+        self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: a rename needs a new major version, 1.1.0 is not one.'], self::problems($base, $renamed, '1.0.0', '1.1.0'));
+        self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: a removal needs a new major version, 1.1.0 is not one.'], self::problems($base, $without, '1.0.0', '1.1.0'));
+        self::assertSame(['workflows/restock.yaml: workflow acme.workflow.restock: an addition needs a new minor version, 1.0.1 is not one.'], self::problems($without, $base, '1.0.0', '1.0.1'));
+    }
+
+    /**
      * A setting written with its default value is the same item as one leaving it out.
      */
     public function testADefaultWrittenOutIsNoChange(): void
@@ -103,6 +123,17 @@ final class VersionCheckTest extends TestCase
     private static function states(Package $package): array
     {
         return (new ItemStates(new FieldTypeCatalog()))->of($package);
+    }
+
+    /**
+     * @param \Closure(array<string, mixed>): array<string, mixed> $change the new spec of workflows/restock.yaml
+     */
+    private static function withWorkflow(Package $package, \Closure $change): Package
+    {
+        return new Package($package->manifest, array_map(
+            static fn (Document $document): Document => 'workflows/restock.yaml' === $document->path ? new Document($document->kind, $document->id, $change($document->spec), $document->path) : $document,
+            $package->documents,
+        ), $package->directory);
     }
 
     /**

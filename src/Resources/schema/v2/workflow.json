@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:metadata-driven:schema:v2:workflow",
+    "title": "The spec of a Workflow document: a workflow, installed as a draft, its objects and the workflows it calls as ids",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["name", "definition"],
+    "properties": {
+        "name": { "type": "string", "pattern": "^\\S(.{0,98}\\S)?$", "description": "The workflow's name: unique in a workspace, it is how a run_workflow step calls it" },
+        "description": { "type": "string", "maxLength": 1000 },
+        "definition": {
+            "type": "object",
+            "required": ["trigger", "steps"],
+            "description": "The workflow definition metadata-driven accepts, with the object of its trigger and of its steps, and the workflow of each run_workflow step, given as an id; fields by name, within their object",
+            "properties": {
+                "trigger": {
+                    "type": "object",
+                    "required": ["on"],
+                    "properties": {
+                        "on": {
+                            "enum": ["created", "updated", "created_or_updated", "deleted", "manual", "transitioned", "schedule", "webhook", "called"],
+                            "description": "The platform's events (workspace_created, member_added) are the system admin's: never in a package"
+                        },
+                        "object": { "type": "string", "pattern": "^[a-z][a-z0-9_]*(\\.[a-z][a-z0-9_]*)+$" }
+                    }
+                },
+                "steps": { "type": "array", "minItems": 1, "items": { "type": "object" } }
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+format: metadata-driven/v2
+kind: Workflow
+id: acme.workflow.restock
+spec:
+  name: Restock
+  description: A product with no seats left gets a tag to restock it.
+  definition:
+    trigger: { on: updated, object: acme.product, when: after, fields: [seats] }
+    steps:
+      - { key: empty, type: filter, when: { field: $trigger.record.seats, op: eq, value: 0 } }
+      - { key: name, type: run_workflow, workflow: acme.workflow.tag_name, input: { sku: '{{ $trigger.record.sku }}' } }
+      - { key: tag, type: create_record, object: acme.tag, values: { name: '{{ name.tag }}' } }

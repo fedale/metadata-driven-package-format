@@ -14,3 +14,4 @@ spec:
     - views/*.yaml
     - translations/*.yaml
     - seeds/*.yaml
+    - workflows/*.yaml
