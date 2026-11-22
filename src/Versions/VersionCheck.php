@@ -61,6 +61,9 @@ final class VersionCheck
             // A workflow is called by its name: renamed, the workflows calling it break.
             if (\in_array('name', $changed, true) && \in_array($state->kind, ['object', 'field', 'workflow'], true)) {
                 $needs('a rename', $state, 'major');
+            } elseif ('object' === $state->kind && \in_array('key', $changed, true)) {
+                // Every table pointing at the object holds keys of its type.
+                $needs('a change of key', $state, 'major');
             } elseif (!$minor && \in_array($state->kind, ['object', 'field'], true) && [] !== array_diff($changed, ['label', 'plural'])) {
                 $needs(\sprintf('a change of %s', implode(', ', array_diff($changed, ['label', 'plural']))), $state, 'minor');
             } elseif (!$minor && 'workflow' === $state->kind && \in_array('definition', $changed, true)) {

@@ -10,6 +10,7 @@
         "label": { "type": "string", "minLength": 1, "maxLength": 100 },
         "plural": { "type": "string", "minLength": 1, "maxLength": 100 },
         "icon": { "type": ["string", "null"], "maxLength": 50 },
+        "key": { "enum": ["uuid", "integer"], "description": "The type of the records' id: a UUID metadata-driven makes, or an integer the database numbers. Left out: uuid. Since 2.4" },
         "label_field": { "oneOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
         "search": {
             "oneOf": [

@@ -76,6 +76,25 @@ $problems = VersionCheck::problems($states->of($previous), $states->of($next), '
 
 Seed records are not compared: a version that only changes records fits any number.
 
+### Keys
+
+Since 2.4, an object may say the type of its records' id, its key: `uuid` (made by
+metadata-driven, the default when left out) or `integer` (numbered by the database). A version
+changing an object's key needs a new major version, as a rename does: every table pointing at the
+object holds keys of its type. A key left out and `uuid` are the same.
+
+```yaml
+format: metadata-driven/v2
+kind: Object
+id: acme.ticket
+spec:
+  name: ticket
+  label: Ticket
+  plural: Tickets
+  key: integer
+  fields: []
+```
+
 ### Workflows
 
 Since 2.3, a package may carry workflows (`workflows/<name>.yaml`, kind `Workflow`): its name,

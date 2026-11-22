@@ -61,6 +61,8 @@ final class ItemStates
             'label' => $spec['label'] ?? null,
             'plural' => $spec['plural'] ?? null,
             'icon' => $spec['icon'] ?? null,
+            // Left out is a UUID key: a version written before 2.4 has the same object.
+            'key' => $spec['key'] ?? 'uuid',
             'label_field' => $spec['label_field'] ?? null,
             'search' => null === $search ? null : ['handler' => $search['handler'] ?? null, 'fields' => $search['fields'] ?? null],
             // A set of sets: neither the order of the sets nor that of their fields matters.
