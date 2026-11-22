@@ -102,6 +102,23 @@ final class VersionCheckTest extends TestCase
     }
 
     /**
+     * Every table pointing at an object holds keys of its type: changing it is a major change. A
+     * key left out (a version written before 2.4) is a UUID one.
+     */
+    public function testAChangeOfKeyNeedsAMajorVersion(): void
+    {
+        $base = self::fixture();
+        $keyed = static fn (string $key): Package => new Package($base->manifest, array_map(
+            static fn (Document $document): Document => 'objects/product.yaml' === $document->path ? new Document($document->kind, $document->id, ['key' => $key] + $document->spec, $document->path) : $document,
+            $base->documents,
+        ), $base->directory);
+
+        self::assertSame([], self::problems($base, $keyed('uuid'), '1.0.0', '1.0.1'));
+        self::assertSame(['objects/product.yaml: object acme.product: a change of key needs a new major version, 1.1.0 is not one.'], self::problems($base, $keyed('integer'), '1.0.0', '1.1.0'));
+        self::assertSame([], self::problems($base, $keyed('integer'), '1.0.0', '2.0.0'));
+    }
+
+    /**
      * A setting written with its default value is the same item as one leaving it out.
      */
     public function testADefaultWrittenOutIsNoChange(): void

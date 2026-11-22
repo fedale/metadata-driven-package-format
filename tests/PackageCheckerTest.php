@@ -24,6 +24,16 @@ final class PackageCheckerTest extends TestCase
         self::assertSame([], self::checker()->check(self::fixture()));
     }
 
+    public function testAnObjectMaySayItsKey(): void
+    {
+        $package = self::fixture();
+        foreach (['uuid', 'integer'] as $key) {
+            $documents = array_map(static fn (Document $document): Document => 'objects/product.yaml' === $document->path ? new Document($document->kind, $document->id, self::spec(['key' => $key] + $document->spec), $document->path) : $document, $package->documents);
+
+            self::assertSame([], self::checker()->check(new Package($package->manifest, $documents, $package->directory)), $key);
+        }
+    }
+
     /**
      * @param \Closure(array<mixed>): array<mixed> $change the new spec of the document
      */
@@ -58,6 +68,7 @@ final class PackageCheckerTest extends TestCase
         yield 'a version that is not semver' => ['package.yaml', static fn (array $spec): array => ['version' => '1.0'] + $spec, 'package.yaml: spec.version: The string should match pattern: ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'];
         yield 'a manifest without license' => ['package.yaml', static fn (array $spec): array => array_diff_key($spec, ['license' => 0]), 'package.yaml: spec: The required properties (license) are missing'];
         yield 'an object without label' => [$product, static fn (array $spec): array => array_diff_key($spec, ['label' => 0]), 'objects/product.yaml: spec: The required properties (label) are missing'];
+        yield 'a key of no type' => [$product, static fn (array $spec): array => ['key' => 'serial'] + $spec, 'objects/product.yaml: spec.key: The data should match one item from enum'];
         yield 'an unknown field type' => [$product, $field(0, ['type' => 'colour']), 'objects/product.yaml: spec.fields.0.type: Unknown field type "colour" (known: text, number, boolean, date, email, tel, url, select, status, password, file, relation, many_to_many).'];
         yield 'an unknown setting' => [$product, $field(0, ['settings' => ['colour' => 'red']]), 'objects/product.yaml: spec.fields.0.settings.colour: Unknown setting (type "text" has maxLength, multiline, pattern, patternMessage).'];
         yield 'a setting out of range' => [$product, $field(6, ['settings' => ['maxSize' => 500]]), 'objects/product.yaml: spec.fields.6.settings.maxSize: Must be between 1 and 100.'];
