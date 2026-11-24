@@ -95,6 +95,27 @@ spec:
   fields: []
 ```
 
+### Tags fields
+
+Since 2.5, a field may be of type `tags`: a short list of free text labels on a record, stored
+as one JSON array. Its settings are `options` (the labels the form suggests, a list of strings),
+`restrict` (only those are allowed), `max` (the most labels, 1 to 100) and `maxLength` (the
+longest label, 1 to 100 characters, 50 by default). A seed gives its value as a YAML list, or in
+a CSV file as the labels separated by `|`. An instance on an earlier version refuses the package,
+naming the type it doesn't know.
+
+```yaml
+format: metadata-driven/v2
+kind: Object
+id: acme.ticket
+spec:
+  name: ticket
+  label: Ticket
+  plural: Tickets
+  fields:
+    - { id: acme.ticket.labels, name: labels, label: Labels, type: tags, settings: { options: [urgent, later], max: 5 } }
+```
+
 ### Workflows
 
 Since 2.3, a package may carry workflows (`workflows/<name>.yaml`, kind `Workflow`): its name,

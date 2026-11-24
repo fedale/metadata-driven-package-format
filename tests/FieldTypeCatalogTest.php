@@ -53,6 +53,16 @@ final class FieldTypeCatalogTest extends TestCase
         self::assertSame(['' => ['Unknown setting: type "email" has no settings.']], array_slice($catalog->check('email', ['' => 1]), 0, 1));
     }
 
+    public function testChecksTheSuggestionsOfATagsField(): void
+    {
+        $catalog = new FieldTypeCatalog();
+
+        self::assertSame([], $catalog->check('tags', ['options' => ['urgent', 'later'], 'restrict' => true, 'max' => 5, 'maxLength' => 20]));
+        self::assertSame(['options' => ['Must be a list of non-empty strings.']], $catalog->check('tags', ['options' => ['urgent', '']]));
+        self::assertSame(['options' => ['Must be a list of non-empty strings.']], $catalog->check('tags', ['options' => [['value' => 'urgent', 'label' => 'Urgent']]]));
+        self::assertSame(['maxLength' => ['Must be between 1 and 100.']], $catalog->check('tags', ['maxLength' => 101]));
+    }
+
     public function testChecksTheTransitionsOfAStatus(): void
     {
         $catalog = new FieldTypeCatalog();

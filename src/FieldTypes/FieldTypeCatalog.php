@@ -162,6 +162,7 @@ final class FieldTypeCatalog
                 ? null
                 : \sprintf('Must be the id of %s of the package.', 'object' === $setting['kind'] ? 'an object' : 'a field'),
             'options' => self::optionsProblem($value),
+            'strings' => self::stringsProblem($value),
             'transitions' => self::transitionsProblem($value),
             default => \sprintf('The catalog describes this setting with an unknown kind "%s".', \is_string($setting['kind']) ? $setting['kind'] : '?'),
         };
@@ -221,6 +222,19 @@ final class FieldTypeCatalog
                 || [] !== array_diff_key($transition, ['name' => true, 'label' => true, 'from' => true, 'to' => true, 'roles' => true])) {
                 return 'Every transition is a map with a name, a label, from (a list of states), to (a state) and roles (a list), nothing else.';
             }
+        }
+
+        return null;
+    }
+
+    /**
+     * A plain list of labels (the suggestions of a tags field). Whether they fit the field's
+     * other settings (their length, no duplicates) is the app's to check.
+     */
+    private static function stringsProblem(mixed $value): ?string
+    {
+        if (!\is_array($value) || !array_is_list($value) || [] !== array_filter($value, static fn (mixed $item): bool => !\is_string($item) || '' === $item)) {
+            return 'Must be a list of non-empty strings.';
         }
 
         return null;

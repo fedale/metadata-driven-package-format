@@ -64,5 +64,11 @@
         "through": { "kind": "object", "nullable": true, "default": null },
         "throughSource": { "kind": "field", "of": "through", "nullable": true, "default": null },
         "throughTarget": { "kind": "field", "of": "through", "nullable": true, "default": null }
+    },
+    "tags": {
+        "options": { "kind": "strings", "default": [] },
+        "restrict": { "kind": "boolean", "default": false },
+        "max": { "kind": "integer", "min": 1, "max": 100, "nullable": true, "default": null },
+        "maxLength": { "kind": "integer", "min": 1, "max": 100, "default": 50 }
     }
 }
