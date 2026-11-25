@@ -18,6 +18,10 @@
     "date": {
         "includeTime": { "kind": "boolean", "default": false }
     },
+    "time": {
+        "seconds": { "kind": "boolean", "default": false }
+    },
+    "color": {},
     "email": {},
     "tel": {},
     "url": {},

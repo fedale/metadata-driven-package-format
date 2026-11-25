@@ -95,6 +95,12 @@ spec:
   fields: []
 ```
 
+### Time and color fields
+
+Since 2.6, a field may be of type `time` (a time of day, setting `seconds`; a seed writes
+`14:30`) or `color` (`#rrggbb`, no settings). An instance on an earlier version refuses the
+package, naming the type it doesn't know.
+
 ### Tags fields
 
 Since 2.5, a field may be of type `tags`: a short list of free text labels on a record, stored
