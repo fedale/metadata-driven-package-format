@@ -22,6 +22,18 @@
         "seconds": { "kind": "boolean", "default": false }
     },
     "color": {},
+    "country": {
+        "preferred": { "kind": "strings", "default": [] },
+        "default": { "kind": "string", "nullable": true, "default": null }
+    },
+    "language": {
+        "preferred": { "kind": "strings", "default": [] },
+        "default": { "kind": "string", "nullable": true, "default": null }
+    },
+    "currency": {
+        "preferred": { "kind": "strings", "default": [] },
+        "default": { "kind": "string", "nullable": true, "default": null }
+    },
     "email": {},
     "tel": {},
     "url": {},

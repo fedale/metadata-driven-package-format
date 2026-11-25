@@ -63,13 +63,15 @@ final class FieldTypeCatalogTest extends TestCase
         self::assertSame(['maxLength' => ['Must be between 1 and 100.']], $catalog->check('tags', ['maxLength' => 101]));
     }
 
-    public function testKnowsTheTimeAndColorTypes(): void
+    public function testKnowsTheTimeColorAndCodeTypes(): void
     {
         $catalog = new FieldTypeCatalog();
 
         self::assertSame([], $catalog->check('time', ['seconds' => true]));
         self::assertSame(['seconds' => ['Must be true or false.']], $catalog->check('time', ['seconds' => 'yes']));
         self::assertSame([], $catalog->check('color', []));
+        self::assertSame([], $catalog->check('country', ['preferred' => ['IT', 'FR'], 'default' => 'IT']));
+        self::assertSame(['preferred' => ['Must be a list of non-empty strings.']], $catalog->check('currency', ['preferred' => 'EUR']));
     }
 
     public function testChecksTheTransitionsOfAStatus(): void

@@ -95,11 +95,13 @@ spec:
   fields: []
 ```
 
-### Time and color fields
+### Time, color and code fields
 
 Since 2.6, a field may be of type `time` (a time of day, setting `seconds`; a seed writes
-`14:30`) or `color` (`#rrggbb`, no settings). An instance on an earlier version refuses the
-package, naming the type it doesn't know.
+`14:30`), `color` (`#rrggbb`, no settings), `country`, `language` or `currency` (an ISO code:
+`IT`, `it`, `EUR`; settings `preferred`, the codes listed first, and `default`). The checker
+doesn't know the ISO lists: whether a code exists is metadata-driven's to check, at install. An
+instance on an earlier version refuses the package, naming the type it doesn't know.
 
 ### Tags fields
 
