@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Fedale\PackageFormat\FieldTypes;
 
 use Fedale\PackageFormat\Format;
+use Fedale\PackageFormat\Text;
 
 /**
  * The field types the format knows, and the settings of each, from field-types.v1.json.
@@ -89,26 +90,38 @@ final class FieldTypeCatalog
      *
      * @param array<string, mixed> $settings
      *
-     * @return array<string, list<string>>
+     * @return array<string, list<string>> in English (see problems())
      */
     public function check(string $type, array $settings): array
     {
+        return array_map(static fn (array $texts): array => array_map(strval(...), $texts), $this->problems($type, $settings));
+    }
+
+    /**
+     * The problems of check(), as texts an application may translate.
+     *
+     * @param array<string, mixed> $settings
+     *
+     * @return array<string, list<Text>>
+     */
+    public function problems(string $type, array $settings): array
+    {
         if (!$this->has($type)) {
-            return ['' => [\sprintf('Unknown field type "%s" (known: %s).', $type, implode(', ', $this->names()))]];
+            return ['' => [new Text('field_type_unknown', 'Unknown field type "%type%" (known: %known%).', ['type' => $type, 'known' => implode(', ', $this->names())])]];
         }
 
         $problems = [];
         $described = $this->settings($type);
         foreach (array_keys(array_diff_key($settings, $described)) as $key) {
             $problems[$key][] = [] === $described
-                ? \sprintf('Unknown setting: type "%s" has no settings.', $type)
-                : \sprintf('Unknown setting (type "%s" has %s).', $type, implode(', ', array_keys($described)));
+                ? new Text('setting_unknown_none', 'Unknown setting: type "%type%" has no settings.', ['type' => $type])
+                : new Text('setting_unknown', 'Unknown setting (type "%type%" has %settings%).', ['type' => $type, 'settings' => implode(', ', array_keys($described))]);
         }
         foreach ($described as $key => $setting) {
             $required = 'object' === $setting['kind'] && true !== ($setting['nullable'] ?? false);
             if (!\array_key_exists($key, $settings)) {
                 if ($required) {
-                    $problems[$key][] = 'Required: the id of an object of the package.';
+                    $problems[$key][] = new Text('setting_object_required', 'Required: the id of an object of the package.');
                 }
                 continue;
             }
@@ -147,39 +160,39 @@ final class FieldTypeCatalog
     /**
      * @param array<string, mixed> $setting
      */
-    private static function problem(array $setting, mixed $value): ?string
+    private static function problem(array $setting, mixed $value): ?Text
     {
         if (null === $value) {
-            return true === ($setting['nullable'] ?? false) ? null : 'Must not be null.';
+            return true === ($setting['nullable'] ?? false) ? null : new Text('setting_null', 'Must not be null.');
         }
 
         return match ($setting['kind']) {
-            'integer' => !\is_int($value) ? 'Must be an integer.' : self::outOfRange($setting, $value),
-            'boolean' => \is_bool($value) ? null : 'Must be true or false.',
-            'string' => \is_string($value) ? null : 'Must be a string.',
-            'choice' => \in_array($value, self::choices($setting), true) ? null : \sprintf('Must be one of %s.', implode(', ', self::choices($setting))),
+            'integer' => !\is_int($value) ? new Text('setting_not_integer', 'Must be an integer.') : self::outOfRange($setting, $value),
+            'boolean' => \is_bool($value) ? null : new Text('setting_not_boolean', 'Must be true or false.'),
+            'string' => \is_string($value) ? null : new Text('setting_not_string', 'Must be a string.'),
+            'choice' => \in_array($value, self::choices($setting), true) ? null : new Text('one_of', 'Must be one of %values%.', ['values' => implode(', ', self::choices($setting))]),
             'object', 'field' => \is_string($value) && 1 === preg_match(Format::ID_PATTERN, $value)
                 ? null
-                : \sprintf('Must be the id of %s of the package.', 'object' === $setting['kind'] ? 'an object' : 'a field'),
+                : ('object' === $setting['kind'] ? new Text('setting_not_object_id', 'Must be the id of an object of the package.') : new Text('setting_not_field_id', 'Must be the id of a field of the package.')),
             'options' => self::optionsProblem($value),
             'strings' => self::stringsProblem($value),
             'transitions' => self::transitionsProblem($value),
-            default => \sprintf('The catalog describes this setting with an unknown kind "%s".', \is_string($setting['kind']) ? $setting['kind'] : '?'),
+            default => new Text('setting_kind_unknown', 'The catalog describes this setting with an unknown kind "%kind%".', ['kind' => \is_string($setting['kind']) ? $setting['kind'] : '?']),
         };
     }
 
     /**
      * @param array<string, mixed> $setting
      */
-    private static function outOfRange(array $setting, int $value): ?string
+    private static function outOfRange(array $setting, int $value): ?Text
     {
         $min = \is_int($setting['min'] ?? null) ? $setting['min'] : null;
         $max = \is_int($setting['max'] ?? null) ? $setting['max'] : null;
         if ((null !== $min && $value < $min) || (null !== $max && $value > $max)) {
             return match (true) {
-                null === $max => \sprintf('Must be at least %d.', $min),
-                null === $min => \sprintf('Must be at most %d.', $max),
-                default => \sprintf('Must be between %d and %d.', $min, $max),
+                null === $max => new Text('setting_below_min', 'Must be at least %min%.', ['min' => (int) $min]),
+                null === $min => new Text('setting_above_max', 'Must be at most %max%.', ['max' => (int) $max]),
+                default => new Text('setting_out_of_range', 'Must be between %min% and %max%.', ['min' => $min, 'max' => $max]),
             };
         }
 
@@ -210,17 +223,17 @@ final class FieldTypeCatalog
      * A Status field's transitions: name, label, the states it leaves, the one it reaches, the
      * roles that may take it. Whether they name states of the field is the app's to check.
      */
-    private static function transitionsProblem(mixed $value): ?string
+    private static function transitionsProblem(mixed $value): ?Text
     {
         if (!\is_array($value) || !array_is_list($value)) {
-            return 'Must be a list of transitions, each with a name, a label, from, to and roles.';
+            return new Text('transitions_invalid', 'Must be a list of transitions, each with a name, a label, from, to and roles.');
         }
         $strings = static fn (mixed $list): bool => \is_array($list) && array_is_list($list) && [] === array_filter($list, static fn (mixed $item): bool => !\is_string($item));
         foreach ($value as $transition) {
             if (!\is_array($transition) || !\is_string($transition['name'] ?? null) || !\is_string($transition['label'] ?? null)
                 || !$strings($transition['from'] ?? null) || !\is_string($transition['to'] ?? null) || !$strings($transition['roles'] ?? [])
                 || [] !== array_diff_key($transition, ['name' => true, 'label' => true, 'from' => true, 'to' => true, 'roles' => true])) {
-                return 'Every transition is a map with a name, a label, from (a list of states), to (a state) and roles (a list), nothing else.';
+                return new Text('transition_invalid', 'Every transition is a map with a name, a label, from (a list of states), to (a state) and roles (a list), nothing else.');
             }
         }
 
@@ -231,24 +244,24 @@ final class FieldTypeCatalog
      * A plain list of labels (the suggestions of a tags field). Whether they fit the field's
      * other settings (their length, no duplicates) is the app's to check.
      */
-    private static function stringsProblem(mixed $value): ?string
+    private static function stringsProblem(mixed $value): ?Text
     {
         if (!\is_array($value) || !array_is_list($value) || [] !== array_filter($value, static fn (mixed $item): bool => !\is_string($item) || '' === $item)) {
-            return 'Must be a list of non-empty strings.';
+            return new Text('strings_invalid', 'Must be a list of non-empty strings.');
         }
 
         return null;
     }
 
-    private static function optionsProblem(mixed $value): ?string
+    private static function optionsProblem(mixed $value): ?Text
     {
         if (!\is_array($value) || !array_is_list($value)) {
-            return 'Must be a list of options, each with a value and a label.';
+            return new Text('options_invalid', 'Must be a list of options, each with a value and a label.');
         }
         foreach ($value as $option) {
             if (!\is_array($option) || !\is_string($option['value'] ?? null) || '' === $option['value'] || !\is_string($option['label'] ?? null)
                 || [] !== array_diff_key($option, ['value' => true, 'label' => true])) {
-                return 'Every option is a map with a value (a non-empty string) and a label, nothing else.';
+                return new Text('option_invalid', 'Every option is a map with a value (a non-empty string) and a label, nothing else.');
             }
         }
 

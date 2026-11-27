@@ -72,7 +72,7 @@ final class Archive
     {
         $in = gzopen($archive, 'rb');
         if (false === $in) {
-            throw self::invalid('It cannot be read.');
+            throw self::invalid(new Text('archive_unreadable', 'It cannot be read.'));
         }
         try {
             $total = 0;
@@ -83,7 +83,7 @@ final class Archive
                     return;
                 }
                 if (++$count > self::MAX_ENTRIES) {
-                    throw self::invalid(\sprintf('It has more than %d entries.', self::MAX_ENTRIES));
+                    throw self::invalid(new Text('archive_too_many_entries', 'It has more than %max% entries.', ['max' => self::MAX_ENTRIES]));
                 }
                 [$path, $type, $size] = self::parse($header);
                 if ('5' === $type) {
@@ -91,11 +91,11 @@ final class Archive
                 }
                 $total += $size;
                 if ($total > $maxBytes) {
-                    throw self::invalid(\sprintf('Its files hold more than %d MB.', intdiv($maxBytes, 1_000_000)));
+                    throw self::invalid(new Text('archive_too_large', 'Its files hold more than %max% MB.', ['max' => intdiv($maxBytes, 1_000_000)]));
                 }
                 $target = $directory.'/'.$path;
                 if (file_exists($target)) {
-                    throw self::invalid(\sprintf('"%s" is in it twice.', $path));
+                    throw self::invalid(new Text('archive_entry_twice', '"%path%" is in it twice.', ['path' => $path]));
                 }
                 if (!is_dir(\dirname($target)) && !mkdir(\dirname($target), 0o775, true) && !is_dir(\dirname($target))) {
                     throw new \RuntimeException(\sprintf('The directory "%s" cannot be created.', \dirname($target)));
@@ -159,11 +159,11 @@ final class Archive
     {
         $stored = octdec(trim(substr($header, 148, 8), " \0"));
         if ($stored !== self::checksum(substr_replace($header, str_repeat(' ', 8), 148, 8))) {
-            throw self::invalid('A header is corrupt.');
+            throw self::invalid(new Text('archive_header_corrupt', 'A header is corrupt.'));
         }
         $type = $header[156];
         if (!\in_array($type, ['0', "\0", '5'], true)) {
-            throw self::invalid('It holds something other than files and directories (a link, a device, an extended header).');
+            throw self::invalid(new Text('archive_not_files', 'It holds something other than files and directories (a link, a device, an extended header).'));
         }
         $name = rtrim(substr($header, 0, 100), "\0");
         $prefix = 'ustar' === substr($header, 257, 5) ? rtrim(substr($header, 345, 155), "\0") : '';
@@ -172,7 +172,7 @@ final class Archive
         $path = rtrim($path, '/');
         if ('' === $path || str_starts_with(('' === $prefix ? '' : $prefix.'/').$name, '/') || str_contains($path, '\\') || str_contains($path, "\0")
             || \in_array('..', explode('/', $path), true)) {
-            throw self::invalid(\sprintf('The path "%s" would leave the package.', $path));
+            throw self::invalid(new Text('archive_path_outside', 'The path "%path%" would leave the package.', ['path' => $path]));
         }
         $size = octdec(trim(substr($header, 124, 12), " \0"));
 
@@ -196,7 +196,7 @@ final class Archive
         while (\strlen($data) < $length) {
             $chunk = gzread($in, $length - \strlen($data));
             if (false === $chunk || '' === $chunk) {
-                throw self::invalid('It ends too soon.');
+                throw self::invalid(new Text('archive_truncated', 'It ends too soon.'));
             }
             $data .= $chunk;
         }
@@ -204,8 +204,8 @@ final class Archive
         return $data;
     }
 
-    private static function invalid(string $why): InvalidPackage
+    private static function invalid(Text $why): InvalidPackage
     {
-        return new InvalidPackage([new Problem('', '', 'The archive is invalid: '.$why)]);
+        return new InvalidPackage([new Problem('', '', new Text('archive_invalid', 'The archive is invalid: %why%', ['why' => $why]))]);
     }
 }

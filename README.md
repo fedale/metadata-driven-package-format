@@ -29,6 +29,25 @@ name: see [Format v2](#format-v2).
 The schemas live in `src/Resources/schema/v2/`, the field types in
 `src/Resources/field-types.v1.json`.
 
+### Problems in another language
+
+A `Problem`'s `message` is English. Since 2.7 its `text` holds the same as a `Text`: a key, the
+English with `%name%` placeholders, and the parameters, so that an application can show it in its
+own language and fall back to the English. A text that has no key, a schema violation's (the
+JSON Schema validator writes it), has a null `text`. `FieldTypeCatalog::problems()` gives the
+problems of a field's settings as texts; `check()` gives them in English, as before.
+
+```php
+foreach ($problems as $problem) {
+    $text = $problem->text;
+    // e.g. no_file, 'No file "%file%" in the package.', ['file' => 'seeds/products.csv']
+    $shown = null === $text ? $problem->message : $translator->translate($text->key, $text->text, $text->parameters);
+}
+```
+
+The key and the English are literal strings at every `new Text(...)` in `src/`: an application
+can read them from there to check that it translates every one.
+
 ```php
 use Fedale\PackageFormat\DocumentCodec;
 use Fedale\PackageFormat\FieldTypes\FieldTypeCatalog;

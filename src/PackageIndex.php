@@ -49,7 +49,7 @@ final class PackageIndex
             // Ids are unique per kind: an object and a form may share one.
             $key = $document->kind->value.' '.$document->id;
             if (isset($ids[$key])) {
-                $problems[] = new Problem($document->path, 'id', \sprintf('Already the id of %s.', $ids[$key]));
+                $problems[] = new Problem($document->path, 'id', new Text('id_twice', 'Already the id of %document%.', ['document' => $ids[$key]]));
             }
             $ids[$key] ??= $document->path;
 
@@ -57,7 +57,7 @@ final class PackageIndex
             if (null !== $unique) {
                 [$name, $at] = $unique;
                 if (isset($names[$name])) {
-                    $problems[] = new Problem($document->path, $at, \sprintf('Same as in %s.', $names[$name]));
+                    $problems[] = new Problem($document->path, $at, new Text('name_twice', 'Same as in %document%.', ['document' => $names[$name]]));
                 }
                 $names[$name] ??= $document->path;
             }
@@ -189,10 +189,10 @@ final class PackageIndex
             $name = \is_string($field['name']) ? $field['name'] : '';
             // Field ids are unique across the package: references name a field by its id alone.
             if (isset($this->fieldOwners[$id])) {
-                $problems[] = new Problem($object->path, \sprintf('spec.fields.%d.id', $position), \sprintf('Already the id of a field of "%s".', $this->fieldOwners[$id]));
+                $problems[] = new Problem($object->path, \sprintf('spec.fields.%d.id', $position), new Text('field_id_twice', 'Already the id of a field of "%object%".', ['object' => $this->fieldOwners[$id]]));
             }
             if (isset($names[$name])) {
-                $problems[] = new Problem($object->path, \sprintf('spec.fields.%d.name', $position), 'Another field of the object has this name.');
+                $problems[] = new Problem($object->path, \sprintf('spec.fields.%d.name', $position), new Text('field_name_twice', 'Another field of the object has this name.'));
             }
             $this->fieldOwners[$id] ??= $object->id;
             $this->fields[$object->id][$name] ??= $field;

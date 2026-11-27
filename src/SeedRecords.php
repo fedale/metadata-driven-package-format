@@ -35,7 +35,7 @@ final class SeedRecords
         $source = \is_string($seed->spec['source'] ?? null) ? $seed->spec['source'] : '';
         $handle = $package->open($source);
         if (null === $handle) {
-            throw new InvalidPackage([new Problem($seed->path, 'spec.source', \sprintf('No file "%s" in the package.', $source))]);
+            throw new InvalidPackage([new Problem($seed->path, 'spec.source', new Text('no_file', 'No file "%file%" in the package.', ['file' => $source]))]);
         }
 
         return $this->csv($handle, $seed->path);
@@ -102,7 +102,7 @@ final class SeedRecords
             // No escape character: RFC 4180 doubles quotes, it does not escape them.
             $header = fgetcsv($handle, null, ',', '"', '');
             if (!\is_array($header) || [null] === $header) {
-                throw new InvalidPackage([new Problem($path, 'spec.source', 'The CSV file has no header: its first line names the fields.')]);
+                throw new InvalidPackage([new Problem($path, 'spec.source', new Text('csv_no_header', 'The CSV file has no header: its first line names the fields.'))]);
             }
             $header = array_map(static fn (?string $name): string => trim((string) $name), $header);
             // A byte order mark, as spreadsheets write it, is not part of the first name.
@@ -115,7 +115,7 @@ final class SeedRecords
                     continue;
                 }
                 if (\count($row) !== \count($header)) {
-                    $problems[] = new Problem($path, 'spec.source', \sprintf('Line %d has %d values, the header %d.', $line, \count($row), \count($header)));
+                    $problems[] = new Problem($path, 'spec.source', new Text('csv_line_does_not_fit', 'Line %line% has %values% values, the header %columns%.', ['line' => $line, 'values' => \count($row), 'columns' => \count($header)]));
                     continue;
                 }
                 $record = [];

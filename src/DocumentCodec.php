@@ -32,36 +32,36 @@ final class DocumentCodec
         try {
             $data = Yaml::parse($yaml, Yaml::PARSE_EXCEPTION_ON_INVALID_TYPE);
         } catch (ParseException $e) {
-            throw new InvalidPackage([new Problem($path, '', \sprintf('Not valid YAML: %s', $e->getMessage()))]);
+            throw new InvalidPackage([new Problem($path, '', new Text('yaml_invalid', 'Not valid YAML: %error%', ['error' => $e->getMessage()]))]);
         }
         if (!\is_array($data) || array_is_list($data) && [] !== $data) {
-            throw new InvalidPackage([new Problem($path, '', 'A document is a map with the keys format, kind, id and spec.')]);
+            throw new InvalidPackage([new Problem($path, '', new Text('document_invalid', 'A document is a map with the keys format, kind, id and spec.'))]);
         }
 
         $problems = [];
         foreach (array_keys(array_diff_key($data, array_flip(self::ENVELOPE))) as $key) {
-            $problems[] = new Problem($path, (string) $key, 'Unknown key: a document has format, kind, id and spec only.');
+            $problems[] = new Problem($path, (string) $key, new Text('document_key_unknown', 'Unknown key: a document has format, kind, id and spec only.'));
         }
         $format = $data['format'] ?? null;
         if (!\in_array($format, Format::READS, true)) {
-            $problems[] = new Problem($path, 'format', \sprintf('Must be "%s".', Format::VERSION));
+            $problems[] = new Problem($path, 'format', new Text('format_invalid', 'Must be "%format%".', ['format' => Format::VERSION]));
         }
         $kind = \is_string($data['kind'] ?? null) ? self::kind($data['kind'], self::V1 === $format) : null;
         if (null === $kind) {
-            $problems[] = new Problem($path, 'kind', \sprintf('Must be one of %s.', implode(', ', self::V1 === $format
+            $problems[] = new Problem($path, 'kind', new Text('one_of', 'Must be one of %values%.', ['values' => implode(', ', self::V1 === $format
                 ? [self::V1_MANIFEST_KIND, ...array_diff(array_column(DocumentKind::cases(), 'value'), [DocumentKind::Package->value])]
-                : array_column(DocumentKind::cases(), 'value'))));
+                : array_column(DocumentKind::cases(), 'value'))]));
         }
         $id = $data['id'] ?? null;
         $pattern = DocumentKind::Package === $kind ? Format::NAME_PATTERN : Format::ID_PATTERN;
         if (!\is_string($id) || 1 !== preg_match($pattern, $id)) {
             $problems[] = new Problem($path, 'id', DocumentKind::Package === $kind
-                ? 'The id of the manifest is the name of the package, vendor/name: lowercase letters, digits and hyphens.'
-                : 'Lowercase dot-separated segments, at least two, the first naming the vendor: e.g. acme.product.');
+                ? new Text('manifest_id_invalid', 'The id of the manifest is the name of the package, vendor/name: lowercase letters, digits and hyphens.')
+                : new Text('id_invalid', 'Lowercase dot-separated segments, at least two, the first naming the vendor: e.g. acme.product.'));
         }
         $spec = $data['spec'] ?? null;
         if (!\is_array($spec) || array_is_list($spec) && [] !== $spec) {
-            $problems[] = new Problem($path, 'spec', 'Must be a map.');
+            $problems[] = new Problem($path, 'spec', new Text('not_a_map', 'Must be a map.'));
         }
         if ([] !== $problems || null === $kind || !\is_string($id) || !\is_array($spec)) {
             throw new InvalidPackage($problems);

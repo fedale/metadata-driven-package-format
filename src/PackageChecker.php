@@ -43,7 +43,7 @@ final class PackageChecker
         $valid = [];
         foreach ($package->documents as $document) {
             $found = DocumentKind::Package === $document->kind
-                ? [new Problem($document->path, 'kind', 'A package has one manifest, '.Format::MANIFEST.'.')]
+                ? [new Problem($document->path, 'kind', new Text('manifest_twice', 'A package has one manifest, %manifest%.', ['manifest' => Format::MANIFEST]))]
                 : $this->schemas->validate($document);
             $problems = [...$problems, ...$found];
             // Documents that break their schema are not checked further: their shape is unknown.
@@ -99,7 +99,7 @@ final class PackageChecker
             }
             $at = 'spec.requires.'.$name;
             if ($name === $package->name()) {
-                $problems[] = new Problem($package->manifest->path, $at, 'A package does not require itself.');
+                $problems[] = new Problem($package->manifest->path, $at, new Text('requires_itself', 'A package does not require itself.'));
                 continue;
             }
             try {
@@ -110,11 +110,11 @@ final class PackageChecker
             }
             $requirement = $given[$name] ?? null;
             if (null === $requirement) {
-                $problems[] = new Problem($package->manifest->path, $at, \sprintf('%s is required: it must be installed, or given to check against.', $name));
+                $problems[] = new Problem($package->manifest->path, $at, new Text('requirement_missing', '%package% is required: it must be installed, or given to check against.', ['package' => $name]));
                 continue;
             }
             if (!$allowed->allows($requirement->version())) {
-                $problems[] = new Problem($package->manifest->path, $at, \sprintf('%s %s does not fit %s.', $name, $requirement->version(), $allowed));
+                $problems[] = new Problem($package->manifest->path, $at, new Text('requirement_mismatch', '%package% %version% does not fit %constraint%.', ['package' => $name, 'version' => $requirement->version(), 'constraint' => (string) $allowed]));
                 continue;
             }
             $indexes[$name] = new PackageIndex($requirement->documents);
@@ -160,7 +160,7 @@ final class PackageChecker
                     default => false,
                 };
                 if ($taken) {
-                    $problems[] = new Problem($document->path, 'id', \sprintf('Already the id of an item of %s, which this package requires.', $name));
+                    $problems[] = new Problem($document->path, 'id', new Text('id_of_required', 'Already the id of an item of %package%, which this package requires.', ['package' => $name]));
                 }
             }
             if (DocumentKind::Object !== $document->kind) {
@@ -170,7 +170,7 @@ final class PackageChecker
                 $id = \is_array($field) && \is_string($field['id'] ?? null) ? $field['id'] : null;
                 foreach ($requirements as $name => $required) {
                     if (null !== $id && \in_array($id, $required->ownIds()['fields'], true)) {
-                        $problems[] = new Problem($document->path, \sprintf('spec.fields.%d.id', $position), \sprintf('Already the id of a field of %s, which this package requires.', $name));
+                        $problems[] = new Problem($document->path, \sprintf('spec.fields.%d.id', $position), new Text('field_id_of_required', 'Already the id of a field of %package%, which this package requires.', ['package' => $name]));
                     }
                 }
             }
@@ -192,7 +192,7 @@ final class PackageChecker
             foreach (\is_array($steps) ? $steps : [] as $i => $step) {
                 $to = \is_array($step) && \is_string($step['to'] ?? null) ? $step['to'] : null;
                 if (null !== $to && !$index->isOwnField($to)) {
-                    $problems[] = new Problem($manifest->path, \sprintf('spec.migrations.%s.%d.to', $version, $i), \sprintf('No field of the package has the id "%s".', $to));
+                    $problems[] = new Problem($manifest->path, \sprintf('spec.migrations.%s.%d.to', $version, $i), new Text('no_field', 'No field of the package has the id "%id%".', ['id' => $to]));
                 }
             }
         }
@@ -216,24 +216,24 @@ final class PackageChecker
         $loaded = [];
         foreach ($seeds as $seed) {
             if (isset($seed->spec['records']) === isset($seed->spec['source'])) {
-                $problems[] = new Problem($seed->path, 'spec', 'A seed has its records inline (records) or in a CSV file (source): one of the two.');
+                $problems[] = new Problem($seed->path, 'spec', new Text('seed_source', 'A seed has its records inline (records) or in a CSV file (source): one of the two.'));
                 continue;
             }
             $object = \is_string($seed->spec['object'] ?? null) ? $seed->spec['object'] : '';
             if (!$index->hasOwnObject($object)) {
                 $problems[] = new Problem($seed->path, 'spec.object', null !== ($owner = $index->requiredPackageOf($object))
-                    ? \sprintf('"%s" is an object of %s: a package seeds its own objects only.', $object, $owner)
-                    : \sprintf('No object of the package has the id "%s".', $object));
+                    ? new Text('seed_foreign_object', '"%object%" is an object of %package%: a package seeds its own objects only.', ['object' => $object, 'package' => $owner])
+                    : new Text('no_object', 'No object of the package has the id "%id%".', ['id' => $object]));
                 continue;
             }
             $fields = $index->fieldsOf($object);
             $key = \is_string($seed->spec['key'] ?? null) ? $seed->spec['key'] : '';
             if (!isset($fields[$key])) {
-                $problems[] = new Problem($seed->path, 'spec.key', \sprintf('The object has no field "%s".', $key));
+                $problems[] = new Problem($seed->path, 'spec.key', new Text('object_field_unknown', 'The object has no field "%field%".', ['field' => $key]));
                 continue;
             }
             if (true !== ($fields[$key]['unique'] ?? false)) {
-                $problems[] = new Problem($seed->path, 'spec.key', \sprintf('"%s" is not a unique field: a key names one record.', $key));
+                $problems[] = new Problem($seed->path, 'spec.key', new Text('key_not_unique', '"%field%" is not a unique field: a key names one record.', ['field' => $key]));
             }
             try {
                 $records = $this->seedRecords->of($package, $seed);
@@ -245,14 +245,14 @@ final class PackageChecker
             $keys = [];
             foreach ($records as $i => $record) {
                 foreach (array_keys(array_diff_key($record, $fields)) as $name) {
-                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $name), \sprintf('The object has no field "%s".', $name));
+                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $name), new Text('object_field_unknown', 'The object has no field "%field%".', ['field' => $name]));
                 }
                 $value = $record[$key] ?? null;
                 $value = \is_scalar($value) ? trim((string) $value) : '';
                 if ('' === $value) {
-                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $key), 'The key is missing: every record has one.');
+                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $key), new Text('key_missing', 'The key is missing: every record has one.'));
                 } elseif (isset($keys[$value])) {
-                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $key), \sprintf('Another record has the key "%s".', $value));
+                    $problems[] = new Problem($seed->path, self::recordAt($seed, $i, $key), new Text('key_twice', 'Another record has the key "%key%".', ['key' => $value]));
                 }
                 $keys[$value] = true;
             }
@@ -291,14 +291,14 @@ final class PackageChecker
     {
         $known = $loaded[$target][2] ?? $requiredSeeds[$target] ?? null;
         if (null === $known) {
-            return [new Problem($path, $at, \sprintf('Points at records of "%s", and the package has no seed for it.', $target))];
+            return [new Problem($path, $at, new Text('reference_without_seed', 'Points at records of "%object%", and the package has no seed for it.', ['object' => $target]))];
         }
         $problems = [];
         // A relation holds one key, written whole; a many-to-many field a list of them.
         $keys = 'many_to_many' === $type ? SeedRecords::list($value) : (\is_scalar($value) ? [trim((string) $value)] : []);
         foreach ($keys as $key) {
             if (!isset($known[$key])) {
-                $problems[] = new Problem($path, $at, \sprintf('No record of the seed of "%s" has the key "%s".', $target, $key));
+                $problems[] = new Problem($path, $at, new Text('reference_unknown', 'No record of the seed of "%object%" has the key "%key%".', ['object' => $target, 'key' => $key]));
             }
         }
 
@@ -315,7 +315,7 @@ final class PackageChecker
         $problems = [];
         foreach ($paths as $file) {
             if (!\is_string($file) || !$package->has($file)) {
-                $problems[] = new Problem($path, $at, \sprintf('No file "%s" in the package.', \is_scalar($file) ? (string) $file : '?'));
+                $problems[] = new Problem($path, $at, new Text('no_file', 'No file "%file%" in the package.', ['file' => \is_scalar($file) ? (string) $file : '?']));
             }
         }
 
@@ -346,14 +346,14 @@ final class PackageChecker
             $type = \is_string($field['type']) ? $field['type'] : '';
             /** @var array<string, mixed> $settings */
             $settings = \is_array($field['settings'] ?? null) ? $field['settings'] : [];
-            foreach ($this->fieldTypes->check($type, $settings) as $key => $messages) {
+            foreach ($this->fieldTypes->problems($type, $settings) as $key => $messages) {
                 foreach ($messages as $message) {
                     $problems[] = new Problem($object->path, '' === $key ? $at.'.type' : $at.'.settings.'.$key, $message);
                 }
             }
             foreach ($this->fieldTypes->references($type, $settings) as $reference) {
                 $message = ReferenceKind::Object === $reference->kind
-                    ? ($index->hasObject($reference->id) ? null : \sprintf('No object of the package has the id "%s".', $reference->id))
+                    ? ($index->hasObject($reference->id) ? null : new Text('no_object', 'No object of the package has the id "%id%".', ['id' => $reference->id]))
                     : $this->fieldReferenceProblem($reference->id, $reference->of, $object->id, $settings, $index);
                 if (null !== $message) {
                     $problems[] = new Problem($object->path, $at.'.settings.'.$reference->setting, $message);
@@ -362,7 +362,7 @@ final class PackageChecker
             $condition = $field['condition'] ?? null;
             if (\is_array($condition) && \is_string($condition['field'] ?? null)) {
                 $message = $condition['field'] === $field['id']
-                    ? 'A field cannot depend on itself.'
+                    ? new Text('condition_on_itself', 'A field cannot depend on itself.')
                     : $this->ownFieldProblem($condition['field'], $object->id, $index);
                 if (null !== $message) {
                     $problems[] = new Problem($object->path, $at.'.condition.field', $message);
@@ -396,7 +396,7 @@ final class PackageChecker
     /**
      * @param array<string, mixed> $settings the settings of the field holding the reference
      */
-    private function fieldReferenceProblem(string $id, ?FieldOwner $of, string $objectId, array $settings, PackageIndex $index): ?string
+    private function fieldReferenceProblem(string $id, ?FieldOwner $of, string $objectId, array $settings, PackageIndex $index): ?Text
     {
         $owner = match ($of) {
             FieldOwner::Own, null => $objectId,
@@ -404,20 +404,20 @@ final class PackageChecker
             FieldOwner::Through => \is_string($settings['through'] ?? null) ? $settings['through'] : null,
         };
         if (null === $owner) {
-            return \sprintf('Names a field of the object in the setting "%s", which is not set.', FieldOwner::Target === $of ? 'target' : 'through');
+            return new Text('field_owner_unset', 'Names a field of the object in the setting "%setting%", which is not set.', ['setting' => FieldOwner::Target === $of ? 'target' : 'through']);
         }
 
         return $this->ownFieldProblem($id, $owner, $index);
     }
 
-    private function ownFieldProblem(string $fieldId, string $objectId, PackageIndex $index): ?string
+    private function ownFieldProblem(string $fieldId, string $objectId, PackageIndex $index): ?Text
     {
         $owner = $index->ownerOf($fieldId);
         if (null === $owner) {
-            return \sprintf('No field of the package has the id "%s".', $fieldId);
+            return new Text('no_field', 'No field of the package has the id "%id%".', ['id' => $fieldId]);
         }
 
-        return $owner === $objectId ? null : \sprintf('"%s" is a field of "%s", not of "%s".', $fieldId, $owner, $objectId);
+        return $owner === $objectId ? null : new Text('field_of_another', '"%field%" is a field of "%owner%", not of "%object%".', ['field' => $fieldId, 'owner' => $owner, 'object' => $objectId]);
     }
 
     /**
@@ -435,7 +435,7 @@ final class PackageChecker
         $trigger = \is_array($definition['trigger'] ?? null) ? $definition['trigger'] : [];
         $problems = [];
         if (\is_string($trigger['object'] ?? null) && !$index->hasObject($trigger['object'])) {
-            $problems[] = new Problem($workflow->path, 'spec.definition.trigger.object', \sprintf('No object of the package has the id "%s".', $trigger['object']));
+            $problems[] = new Problem($workflow->path, 'spec.definition.trigger.object', new Text('no_object', 'No object of the package has the id "%id%".', ['id' => $trigger['object']]));
         }
 
         return [...$problems, ...self::checkSteps($workflow->path, 'spec.definition.steps', $definition['steps'] ?? null, $index)];
@@ -453,10 +453,10 @@ final class PackageChecker
             }
             $here = $at.'.'.$i;
             if (\is_string($step['object'] ?? null) && !$index->hasObject($step['object'])) {
-                $problems[] = new Problem($path, $here.'.object', \sprintf('No object of the package has the id "%s".', $step['object']));
+                $problems[] = new Problem($path, $here.'.object', new Text('no_object', 'No object of the package has the id "%id%".', ['id' => $step['object']]));
             }
             if ('run_workflow' === ($step['type'] ?? null) && \is_string($step['workflow'] ?? null) && !$index->hasWorkflow($step['workflow'])) {
-                $problems[] = new Problem($path, $here.'.workflow', \sprintf('No workflow of the package has the id "%s".', $step['workflow']));
+                $problems[] = new Problem($path, $here.'.workflow', new Text('no_workflow', 'No workflow of the package has the id "%id%".', ['id' => $step['workflow']]));
             }
             foreach (\is_array($step['branches'] ?? null) ? $step['branches'] : [] as $b => $branch) {
                 $problems = [...$problems, ...self::checkSteps($path, $here.'.branches.'.$b.'.steps', \is_array($branch) ? ($branch['steps'] ?? null) : null, $index)];
@@ -480,8 +480,8 @@ final class PackageChecker
         $owner = $index->requiredPackageOf($object);
 
         return [new Problem($view->path, 'spec.object', null !== $owner
-            ? \sprintf('"%s" is an object of %s: a package adds views to its own objects only.', $object, $owner)
-            : \sprintf('No object of the package has the id "%s".', $object))];
+            ? new Text('view_foreign_object', '"%object%" is an object of %package%: a package adds views to its own objects only.', ['object' => $object, 'package' => $owner])
+            : new Text('no_object', 'No object of the package has the id "%id%".', ['id' => $object]))];
     }
 
     /**
@@ -507,7 +507,7 @@ final class PackageChecker
     {
         $object = $node['object'] ?? null;
         if (!\is_string($object) || !$index->hasObject($object)) {
-            return [new Problem($path, $at.'.object', \sprintf('Must be the id of an object of the package%s.', \is_string($object) ? \sprintf(', "%s" is none', $object) : ''))];
+            return [new Problem($path, $at.'.object', \is_string($object) ? new Text('form_object_unknown', 'Must be the id of an object of the package, "%object%" is none.', ['object' => $object]) : new Text('form_object_required', 'Must be the id of an object of the package.'))];
         }
 
         $problems = [];
@@ -520,11 +520,11 @@ final class PackageChecker
         }
         foreach (\is_array($node['sections'] ?? null) ? $node['sections'] : [] as $i => $section) {
             if (!\is_array($section)) {
-                $problems[] = new Problem($path, $at.'.sections.'.$i, 'A section is a map.');
+                $problems[] = new Problem($path, $at.'.sections.'.$i, new Text('section_invalid', 'A section is a map.'));
                 continue;
             }
             if (!\is_string($section['via'] ?? null)) {
-                $problems[] = new Problem($path, $at.'.sections.'.$i.'.via', 'Must be the id of the relation field of the section\'s object pointing at its parent.');
+                $problems[] = new Problem($path, $at.'.sections.'.$i.'.via', new Text('section_via_required', 'Must be the id of the relation field of the section\'s object pointing at its parent.'));
             }
             /** @var array<string, mixed> $section */
             $problems = [...$problems, ...$this->checkFormNode($path, $at.'.sections.'.$i, $section, $index)];

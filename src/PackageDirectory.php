@@ -27,29 +27,29 @@ final class PackageDirectory
         $name = is_file($directory.'/'.Format::MANIFEST) || !is_file($directory.'/'.Format::MANIFEST_V1) ? Format::MANIFEST : Format::MANIFEST_V1;
         $manifestPath = $directory.'/'.$name;
         if (!is_file($manifestPath)) {
-            throw new InvalidPackage([new Problem(Format::MANIFEST, '', \sprintf('No manifest in "%s".', $directory))]);
+            throw new InvalidPackage([new Problem(Format::MANIFEST, '', new Text('no_manifest', 'No manifest in "%directory%".', ['directory' => $directory]))]);
         }
         // Nothing is read through a link: what it points at could be anywhere, and a problem
         // quoting it would show it to whoever reads the report.
         if (!self::inside($directory, $manifestPath)) {
-            throw new InvalidPackage([new Problem($name, '', 'Not a regular file.')]);
+            throw new InvalidPackage([new Problem($name, '', new Text('not_a_file', 'Not a regular file.'))]);
         }
         $manifest = $this->codec->decode((string) file_get_contents($manifestPath), $name);
         if (DocumentKind::Package !== $manifest->kind) {
-            throw new InvalidPackage([new Problem($name, 'kind', 'The manifest is of kind Package.')]);
+            throw new InvalidPackage([new Problem($name, 'kind', new Text('manifest_kind', 'The manifest is of kind Package.'))]);
         }
         $problems = [];
         $documents = [];
         foreach ($this->resources($manifest) as $i => $pattern) {
             // The schema allows "dir/pattern.yaml" only: no "..", no absolute path, no subdirectories.
             if (str_contains($pattern, '..') || str_starts_with($pattern, '/')) {
-                $problems[] = new Problem($name, 'spec.resources.'.$i, 'A resource stays inside the package.');
+                $problems[] = new Problem($name, 'spec.resources.'.$i, new Text('resource_outside', 'A resource stays inside the package.'));
                 continue;
             }
             foreach (glob($directory.'/'.$pattern) ?: [] as $file) {
                 $path = substr($file, \strlen($directory) + 1);
                 if (!self::inside($directory, $file)) {
-                    $problems[] = new Problem($path, '', 'Not a regular file.');
+                    $problems[] = new Problem($path, '', new Text('not_a_file', 'Not a regular file.'));
                     continue;
                 }
                 try {

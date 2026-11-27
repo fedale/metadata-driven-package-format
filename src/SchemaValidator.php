@@ -25,7 +25,7 @@ final class SchemaValidator
     {
         $file = self::DIRECTORY.'/'.strtolower($document->kind->value).'.json';
         if (!is_file($file)) {
-            return [new Problem($document->path, 'kind', \sprintf('Documents of kind %s are not supported yet.', $document->kind->value))];
+            return [new Problem($document->path, 'kind', new Text('kind_unsupported', 'Documents of kind %kind% are not supported yet.', ['kind' => $document->kind->value]))];
         }
 
         $result = $this->validator()->validate(Helper::toJSON($document->spec), self::schemaId($document->kind));
